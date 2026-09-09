@@ -179,12 +179,14 @@ class TurnExecutionMixin:
     def _ability_for_action(self, action: str, choice: str | None):
         if not choice:
             return None
+        actor = self.attacker if self.attacker is not None else self.player
+        if actor is None:
+            return None
+        spellbook = getattr(actor, "spellbook", {})
         if action in {"Cast Spell", "Runic Boost"}:
-            return self.attacker.spellbook.get("Spells", {}).get(choice)
+            return spellbook.get("Spells", {}).get(choice)
         if action in {"Use Skill", "Tame"}:
-            return self.attacker.spellbook.get("Skills", {}).get(
-                choice if action == "Use Skill" else "Tame"
-            )
+            return spellbook.get("Skills", {}).get(choice if action == "Use Skill" else "Tame")
         return None
 
     def _target_scope_for_action(
@@ -208,14 +210,15 @@ class TurnExecutionMixin:
             "Dismiss Form",
         }:
             return TargetScope.NONE
-        if action in {"Defend", "Summon", "Detect"}:
+        if action in {"Defend", "Summon"}:
             return TargetScope.SELF
         if action == "Use Item":
             if choice:
                 import re
 
                 item_key = re.split(r"\s{2,}", choice)[0]
-                items = self.attacker.inventory.get(item_key, [])
+                actor = self.attacker if self.attacker is not None else self.player
+                items = getattr(actor, "inventory", {}).get(item_key, [])
                 item = items[0] if items else None
                 if isinstance(item, type):
                     item = item()
@@ -310,7 +313,7 @@ class TurnExecutionMixin:
             if not is_revealed_to(self.attacker, self.active_player_character):
                 return self._reject_intent(
                     ActionValidationCode.CONCEALED_TARGET,
-                    "That concealed opponent cannot be targeted directly. Use Detect or an area action.\n",
+                    "That concealed opponent cannot be targeted directly. Wait for detection or use an area action.\n",
                 )
             return []
         if not supplied:
@@ -338,6 +341,6 @@ class TurnExecutionMixin:
         if not is_revealed_to(self.attacker, member.enemy):
             return self._reject_intent(
                 ActionValidationCode.CONCEALED_TARGET,
-                "That concealed opponent cannot be targeted directly. Use Detect or an area action.\n",
+                "That concealed opponent cannot be targeted directly. Wait for detection or use an area action.\n",
             )
         return [member]

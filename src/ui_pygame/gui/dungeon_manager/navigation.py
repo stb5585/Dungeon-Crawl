@@ -10,6 +10,11 @@ from src.core.player import DIRECTIONS
 
 
 class DungeonNavigationMixin:
+    def _sync_realm_scoped_effects(self) -> None:
+        """Clear effects that cannot persist after leaving their special realm."""
+        if self.player_char.location_z != map_tiles.REALM_OF_CAMBION_LEVEL:
+            self.player_char.anti_magic_active = False
+
     def _check_hidden_cache(self) -> None:
         """Award the equipped Seeker ring cache once a floor is well mapped."""
         level = int(self.player_char.location_z)
@@ -93,6 +98,7 @@ class DungeonNavigationMixin:
         # Move the player
         self.player_char.location_x += dx
         self.player_char.location_y += dy
+        self._sync_realm_scoped_effects()
         if hasattr(self.player_char, "record_step"):
             self.player_char.record_step()
 
@@ -180,6 +186,7 @@ class DungeonNavigationMixin:
         self._show_dungeon_loading_screen(loading_text)
 
         self.player_char.location_z = target_level
+        self._sync_realm_scoped_effects()
         if hasattr(self.player_char, "record_stairs_used"):
             self.player_char.record_stairs_used()
         if "StairsUp" in tile_type:
@@ -211,6 +218,7 @@ class DungeonNavigationMixin:
         self._show_dungeon_loading_screen(f"Descending to level {target_level}...")
 
         self.player_char.location_z = target_level
+        self._sync_realm_scoped_effects()
         if hasattr(self.player_char, "record_stairs_used"):
             self.player_char.record_stairs_used()
         if "StairsDown" in tile_type:

@@ -13,7 +13,6 @@ from ...classes import (
     promotion_kits,
     warrior,
 )
-from ..visibility import detect, is_concealed
 from .models import ActionResult
 
 if TYPE_CHECKING:
@@ -63,26 +62,6 @@ class SingleTargetActionResolutionMixin:
             result.message = self._cancel_pending_charge()
             if self.attacker == self.player:
                 warrior.finish_action(self.player)
-            return result
-
-        if action == "Detect":
-            if self._member_for_character(self.attacker) is not None:
-                concealed = (
-                    [self.active_player_character]
-                    if is_concealed(self.active_player_character)
-                    else []
-                )
-            else:
-                concealed = [
-                    member.enemy
-                    for member in self.encounter.living_members
-                    if is_concealed(member.enemy)
-                ]
-            if not concealed:
-                result.message = f"{self.attacker.name} finds no concealed opponents.\n"
-            else:
-                found = sum(detect(self.attacker, target, rng=self._rng) for target in concealed)
-                result.message = f"{self.attacker.name} detects {found} of {len(concealed)} concealed opponents.\n"
             return result
 
         if self.attacker.status_effects["Sleep"].active and astromancer.silent_lucidity_active(

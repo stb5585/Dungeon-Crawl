@@ -168,7 +168,7 @@ def test_hostile_action_breaks_player_concealment_on_commit(monkeypatch):
     assert is_concealed(player) is False
 
 
-def test_enemy_detects_a_concealed_player_and_cannot_attack_them_directly():
+def test_enemy_automatically_detects_a_concealed_player_before_acting():
     engine, player, _enemies, _tile = _engine()
     engine.start_battle()
     conceal(player)
@@ -176,13 +176,14 @@ def test_enemy_detects_a_concealed_player_and_cannot_attack_them_directly():
     engine.swap_turns()
 
     invalid = engine.execute_intent(ActionIntent("Attack"))
+    pre_turn = engine.pre_turn()
+    engine.attacker.options = lambda _target, _actions, _tile: ("Attack", None)
     action, choice = engine.get_enemy_action()
-    result = engine.execute_action(action, choice)
 
     assert invalid.committed is False
     assert invalid.validation_code is ActionValidationCode.CONCEALED_TARGET
-    assert (action, choice) == ("Detect", None)
-    assert result.committed is True
+    assert "detects 1 concealed opponent" in pre_turn.effects_text
+    assert (action, choice) != ("Detect", None)
     assert is_revealed_to(engine.attacker, player) is True
 
 

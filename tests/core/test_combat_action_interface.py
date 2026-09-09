@@ -68,6 +68,8 @@ def test_all_actions_keep_unavailable_learned_actions_visible_with_reason():
     assert entries[0].availability.code is ActionAvailabilityCode.INSUFFICIENT_MP
     assert "Not enough MP" in entries[0].display_label
     assert entries[1].enabled is True
+    assert entries[0].icon_key == "spell_arcane"
+    assert entries[1].icon_key == "skill_offense"
 
 
 def test_engine_owned_target_scope_marks_single_target_action_without_a_target():
@@ -139,3 +141,18 @@ def test_snapshot_uses_engine_timeline_and_class_resource_provider(monkeypatch):
     assert snapshot.resources[0].stable_key == "class_resource.resolve"
     assert snapshot.resources[0].ready is True
     assert len(snapshot.shortcuts) == SHORTCUT_SLOT_COUNT
+
+
+def test_snapshot_exposes_active_environmental_effects(monkeypatch):
+    player = _player()
+    player.anti_magic_active = True
+    engine = SimpleNamespace(timeline_entries=lambda _limit: (), _focused_enemy=lambda: None)
+    monkeypatch.setattr(
+        "src.core.classes.promotion_kits.status_summary_rows",
+        lambda _player, _target: [],
+    )
+
+    snapshot = combat_interface_snapshot(engine, player)
+
+    assert snapshot.environmental_effects[0].stable_key == "environment.anti_magic_field"
+    assert snapshot.environmental_effects[0].icon_label == "AM"

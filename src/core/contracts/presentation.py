@@ -68,3 +68,17 @@ class CombatResourcePresentation:
             raise ValueError("resource value must not be negative")
         if self.capacity is not None and self.capacity < 0:
             raise ValueError("resource capacity must not be negative")
+
+
+@dataclass(frozen=True)
+class EnvironmentalEffectPresentation:
+    """One active world effect that must remain visible during play."""
+
+    stable_key: str
+    label: str
+    detail: str
+    icon_label: str
+
+    def __post_init__(self) -> None:
+        if not all((self.stable_key, self.label, self.detail, self.icon_label)):
+            raise ValueError("environmental effect fields must not be empty")

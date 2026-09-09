@@ -113,15 +113,15 @@ class SmokeBomb(Misc):
 
 
 class Monocane(Misc):
-    """Reusable delivery cane required to cast Sleeping Powder."""
+    """A potent medicinal powder required to cast Sleeping Powder."""
 
     def __init__(self, charges: int = 5):
         self.charges = max(1, int(charges))
         super().__init__(
             name="Monocane",
             description=(
-                "A hollow gentleman's cane used to cast Sleeping Powder. "
-                f"Uses remaining: {self.charges}."
+                "A potent medicinal powder that causes those affected "
+                "by it to fall asleep. Required to cast Sleeping Powder."
             ),
             value=2500,
             rarity=0.45,
@@ -478,6 +478,18 @@ def _inventory_stack(character, item_name: str):
     return stack if isinstance(stack, list) else []
 
 
+def _materialize_inventory_item(character, item_name: str):
+    """Return the first item in a stack, instantiating deferred enemy loot classes."""
+    stack = _inventory_stack(character, item_name)
+    if not stack:
+        return None
+    item = stack[0]
+    if isinstance(item, type):
+        item = item()
+        stack[0] = item
+    return item
+
+
 def has_lockpick_kit(character) -> bool:
     """Return whether a character carries the reusable lockpicking tools."""
     return bool(_inventory_stack(character, "Lockpick Kit"))
@@ -490,10 +502,9 @@ def has_smoke_bomb(character) -> bool:
 
 def use_reusable_tool(character, item_name: str) -> tuple[bool, str]:
     """Spend one charge from a named tool and remove it when exhausted."""
-    stack = _inventory_stack(character, item_name)
-    if not stack:
+    tool = _materialize_inventory_item(character, item_name)
+    if tool is None:
         return False, f"{item_name} is required.\n"
-    tool = stack[0]
     charges = max(0, int(getattr(tool, "charges", 0) or 0))
     if charges <= 0:
         character.modify_inventory(tool, subtract=True)
@@ -570,8 +581,8 @@ def use_lockpick_kit(
 
 def consume_smoke_bomb(character, *, roll: float | None = None) -> tuple[bool, str]:
     """Consume one Smoke Bomb for Smoke Screen."""
-    stack = _inventory_stack(character, "Smoke Bomb")
-    if not stack:
+    smoke_bomb = _materialize_inventory_item(character, "Smoke Bomb")
+    if smoke_bomb is None:
         return False, "Smoke Screen requires a Smoke Bomb.\n"
     preserve_chance = 0.0
     try:
@@ -586,7 +597,7 @@ def consume_smoke_bomb(character, *, roll: float | None = None) -> tuple[bool, s
     preserve_roll = random.random() if preserve_chance > 0 and roll is None else float(roll or 0.0)
     if preserve_chance > 0 and preserve_roll < preserve_chance:
         return True, "A carefully packed Smoke Bomb bursts without being consumed.\n"
-    character.modify_inventory(stack[0], subtract=True)
+    character.modify_inventory(smoke_bomb, subtract=True)
     return True, "A Smoke Bomb bursts open.\n"
 
 

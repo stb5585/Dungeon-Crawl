@@ -198,8 +198,9 @@ structural work.
   the current legal focus by default, explicitly locked actions fail if their
   target is lost, and area actions snapshot their roster.
 - Six persisted shortcut slots hold typed ability or item references. Attack,
-  Defend, Items, All Actions, Detect, Cancel Charge, and Flee remain fixed
-  system commands. Unavailable learned actions remain visible with a reason.
+  Defend, Items, All Actions, and Flee remain fixed system commands; contextual
+  actions such as Cancel Charge appear only when legal. Unavailable learned
+  actions remain visible with a reason.
 - Versioned saves begin at `schema_version: 1`. Unmarked saves are rejected
   with a new-game-required message; no migration is provided for this
   pre-release reset.
@@ -280,10 +281,10 @@ structural work.
 
 ### Presentation And Recovery Contract
 
-- Keyboard keys 1-6 activate shortcuts. Character Menu and in-combat All
-  Actions assignment share one non-turn-consuming editor. Mouse and controller
-  navigation provide equivalent selection, target, detail, and cancellation
-  operations.
+- Keyboard keys 1-6 activate shortcuts. Character Menu Action Layout is the
+  sole non-turn-consuming shortcut editor; All Actions is a read-only catalog.
+  Mouse and controller navigation provide equivalent selection, target, detail,
+  and cancellation operations.
 - Shortcut references contain an ability slug or existing item serializer
   token. Missing items leave a disabled assignment. Empty slots auto-fill from
   learned active abilities in acquisition order without overwriting a player
@@ -358,13 +359,14 @@ Current slice status:
   a bounded normal-opportunity trace, final actor readiness, monotonic-time
   check, and consecutive-actor diagnostic for deterministic investigation.
 - Interface: complete; the Pygame combat surface projects six persisted typed
-  shortcut slots, fixed system commands, and an All Actions catalog that keeps
-  learned-but-unavailable actions visible with an engine-derived reason.
-  Character Menu Action Layout and All Actions share the same non-turn shortcut
-  editor. The HUD receives prioritized text-complete class-resource rows and
-  the next six core-owned readiness opportunities; existing concealed enemy
-  lanes retain their generic presence presentation. Keyboard/mouse operations
-  now have controller parity for navigation, confirmation, cancellation,
+  shortcut slots as an icon-capable action bar, fixed compact system commands,
+  and an All Actions catalog that keeps learned-but-unavailable actions visible
+  with an engine-derived reason. Character Menu Action Layout is the only
+  shortcut editor. The HUD receives prioritized text-complete class-resource
+  rows, active environmental-effect feedback, and a six-token projection of
+  core-owned readiness opportunities; readiness numbers remain diagnostic-only.
+  Existing concealed enemy lanes retain their generic presence presentation.
+  Keyboard/mouse operations now have controller parity for navigation, confirmation, cancellation,
   focus, All Actions, and resource details.
 - Evidence and rollout: complete; the seed-1337 singleton baseline and all
   three promoted Pilot 3 matrices were regenerated against the completed

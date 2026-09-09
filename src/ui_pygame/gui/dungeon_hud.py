@@ -9,6 +9,7 @@ import pygame
 
 from src.core import map_tiles
 from src.core.classes import promotion_kits, wizard
+from src.core.combat.action_interface import environmental_effect_presentations
 from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
 
 from .enemy_presentation import player_has_sight, presented_enemy_name
@@ -101,6 +102,8 @@ class DungeonHUD:
             y_offset = self._render_location_label(player_char, y_offset)
             y_offset += 12
 
+        y_offset = self._render_environmental_effects(player_char, y_offset)
+
         # Health and Mana bars
         y_offset = self._render_resource_bars(player_char, y_offset)
         y_offset += 20
@@ -160,6 +163,20 @@ class DungeonHUD:
         text_x = label_rect.left + max(8, (label_rect.width - label_surface.get_width()) // 2)
         self.screen.blit(label_surface, (text_x, label_rect.top + 5))
         return label_rect.bottom
+
+    def _render_environmental_effects(self, player_char, y_offset: int) -> int:
+        """Render active world modifiers in the shared HUD path."""
+        effects = environmental_effect_presentations(player_char)
+        if not effects:
+            return y_offset
+        effect = effects[0]
+        rect = pygame.Rect(self.hud_x + 16, y_offset, self.hud_width - 32, 32)
+        pygame.draw.rect(self.screen, (66, 42, 72), rect, border_radius=4)
+        pygame.draw.rect(self.screen, (190, 118, 205), rect, 1, border_radius=4)
+        label = f"{effect.icon_label} {effect.label}"
+        surface = self.small_font.render(label, True, (247, 226, 245))
+        self.screen.blit(surface, surface.get_rect(center=rect.center))
+        return rect.bottom + 12
 
     def _effect_label(self, effect_name):
         labels = {

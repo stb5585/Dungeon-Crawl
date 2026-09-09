@@ -391,6 +391,7 @@ class TestBattleEngineBasics:
         while engine.attacker is not player:
             engine.swap_turns()
         player.spellbook["Skills"]["Charge"] = abilities.Charge()
+        assert "Cancel Charge" not in engine.available_actions
 
         engine.execute_action("Use Skill", choice="Charge")
         mana_after_start = player.mana.current
@@ -404,6 +405,7 @@ class TestBattleEngineBasics:
         engine.swap_turns()
         while engine.attacker is not player:
             engine.swap_turns()
+        assert "Cancel Charge" in engine.available_actions
         cancelled = engine.execute_action("Cancel Charge")
 
         assert cancelled.committed is True

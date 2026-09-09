@@ -768,12 +768,10 @@ def test_render_combat_does_not_default_to_player_turn(monkeypatch):
 
 def test_action_menu_overlay_fits_many_actions_without_overflow(monkeypatch):
     view = _make_view()
-    title_font = RecordingFont()
     action_font = RecordingFont()
-    fonts = iter([title_font, action_font])
 
     monkeypatch.setattr(
-        "src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts)
+        "src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: action_font
     )
     monkeypatch.setattr(
         "src.ui_pygame.gui.combat_view.pygame.Surface",
@@ -795,7 +793,7 @@ def test_action_menu_overlay_fits_many_actions_without_overflow(monkeypatch):
     ]
     view._render_action_menu_overlay(actions, selected_action=7)
 
-    menu_top = view.screen_height - 150
+    menu_top = view.screen_height - 174
     action_blits = [
         (surface.text, position)
         for surface, position, _args, _kwargs in view.screen.blit_calls
@@ -810,7 +808,7 @@ def test_action_menu_overlay_fits_many_actions_without_overflow(monkeypatch):
     _actions_per_row, _row_count, _start_y_offset, _row_height, cell_width = (
         view._action_grid_layout(
             int(view.screen_width * 0.65),
-            150,
+            174,
             len(actions),
         )
     )

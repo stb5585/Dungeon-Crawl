@@ -1369,6 +1369,10 @@ class TestBatch2NewEffects:
         assert target.stat_effects["Defense"].active
         assert target.stat_effects["Defense"].extra < 0
         assert len(result.extra.get("messages", [])) == 2
+        assert all("lowered." in message for message in result.extra["messages"])
+        assert all(
+            "turn" not in message and "(" not in message for message in result.extra["messages"]
+        )
 
     def test_dynamic_multi_debuff_skips_zero_stat_changes(self):
         from src.core.combat.combat_result import CombatResult
@@ -1854,8 +1858,9 @@ class TestBatch2CombatIntegration:
         monkeypatch.setattr("random.random", lambda: 0.69)
         message = spell.cast(caster, target)
 
-        assert "attack is lowered by 20% (21) for 4 turns" in message
-        assert "defense is lowered by 20% (17) for 4 turns" in message
+        assert "attack is lowered by 20%." in message
+        assert "defense is lowered by 20%." in message
+        assert "(21)" not in message and "4 turns" not in message
         assert target.stat_effects["Attack"].extra == -21
         assert target.stat_effects["Defense"].extra == -17
         assert target.stat_effects["Attack"].duration == 4

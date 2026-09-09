@@ -396,6 +396,10 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         ):
             insert_at = actions.index("Use Skill") + 1 if "Use Skill" in actions else len(actions)
             actions.insert(insert_at, "Repertoire")
+        if self.attacker is not None:
+            actor_id = self.current_actor_id or self._actor_id_for(self.attacker)
+            if self._pending_charge(actor_id) is not None and "Cancel Charge" not in actions:
+                actions.append("Cancel Charge")
         return actions
 
     def summoner_support_actions(self) -> list[str]:
@@ -495,6 +499,10 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             raise NotImplementedError(
                 "Boss, trial, and scripted multi-enemy encounters are not supported."
             )
+
+        in_realm_of_cambion = getattr(self.player, "in_realm_of_cambion", None)
+        if callable(in_realm_of_cambion) and not in_realm_of_cambion():
+            self.player.anti_magic_active = False
 
         self._clear_stale_charging_actions(self.player)
         for member in self.encounter.members:

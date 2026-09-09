@@ -1274,7 +1274,7 @@ class Zahhak(Summons):
             "Physical": 0.25,
         }
         self.status_immunity.append("Poison")
-        self.description = ""  # TODO
+        self.description = "A dragon ally whose elemental wards and spellcraft grow with level."
 
     def special_attack(self, target: Character) -> str:
         return abilities.BreatheFire().use(self, target=target)

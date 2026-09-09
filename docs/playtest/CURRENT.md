@@ -74,3 +74,20 @@ The comprehensive readiness pass is complete when:
 2. all promoted issues have focused regression coverage;
 3. class-kit and combat evidence is recorded against the final ruleset; and
 4. the roadmap identifies the next content, tuning, or release-readiness slice.
+
+## Playtesting Notes
+- anti-magic field works to prevent ability usage and it did correctly allow the character to select another option
+- the new turn stack works to allow faster characters to go twice in a row
+
+## Current Focus — Combat Presentation
+
+- Reconfigure shortcuts only through Character Menu → Action Layout, then
+  verify keys 1–6, mouse, and controller activation in combat.
+- Confirm the ability bar preserves unavailable-action reasons and All Actions
+  remains a read-only catalog.
+- Confirm the token timeline highlights the active actor without showing
+  readiness values or obscuring the active-turn badge.
+- Enter an anti-magic encounter and verify the persistent field badge and its
+  one-time combat-entry explanation before selecting an ability.
+- Exercise Sleeping Powder or Smoke Screen on an enemy and a familiar without
+  an item, then verify player item-gated use still requires its tool.

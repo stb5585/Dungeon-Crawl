@@ -13,7 +13,7 @@ from ...classes import (
 )
 from ...events.event_bus import combat_event_context
 from ..targeting import TargetScope
-from ..visibility import is_revealed_to
+from ..visibility import detect, is_concealed, is_revealed_to
 from .models import (
     ForcedAction,
     PreTurnResult,
@@ -171,6 +171,10 @@ class TurnPreparationMixin:
             )
             return result
 
+        detection_text = self._automatic_detection_text()
+        if detection_text:
+            result.effects_text = f"{result.effects_text or ''}{detection_text}"
+
         # Check if the attacker can act this turn
         active, text = self.attacker.check_active()
         if not active:
@@ -178,6 +182,27 @@ class TurnPreparationMixin:
             result.inactive_reason = text
 
         return result
+
+    def _automatic_detection_text(self) -> str:
+        """Attempt to reveal concealed opponents at the start of an active turn."""
+        if self._member_for_character(self.attacker) is not None:
+            concealed = (
+                [self.active_player_character]
+                if is_concealed(self.active_player_character)
+                and not is_revealed_to(self.attacker, self.active_player_character)
+                else []
+            )
+        else:
+            concealed = [
+                member.enemy
+                for member in self.encounter.living_members
+                if is_concealed(member.enemy) and not is_revealed_to(self.attacker, member.enemy)
+            ]
+        found = sum(detect(self.attacker, target, rng=self._rng) for target in concealed)
+        if not found:
+            return ""
+        opponent_label = "opponent" if found == 1 else "opponents"
+        return f"{self.attacker.name} detects {found} concealed {opponent_label}.\n"
 
     @staticmethod
     @staticmethod
@@ -284,7 +309,7 @@ class TurnPreparationMixin:
     def get_enemy_action(self) -> tuple[str, str | None]:
         """Ask the enemy AI for its chosen action. Returns (action, choice)."""
         if not is_revealed_to(self.attacker, self.active_player_character):
-            return "Detect", None
+            return "Nothing", None
         return self.attacker.options(
             self.active_player_character,
             self.available_actions,

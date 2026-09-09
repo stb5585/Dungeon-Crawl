@@ -778,6 +778,9 @@ class TestPlayerUtilityBehaviors:
         assert "Pickup Weapon" in actions
         assert "Summon" in actions
 
+        actions = player.additional_actions(["Attack", "Pickup Weapon", "Use Item", "Flee"])
+        assert actions.count("Pickup Weapon") == 1
+
     def test_move_blocked_tile_does_not_advance_and_turn_helpers_rotate(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         player.world_dict[(6, 10, 0)] = type("Tile", (), {"enter": False})()

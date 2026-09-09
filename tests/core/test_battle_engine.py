@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from src.core import abilities, items
 from src.core.classes import class_rings, promotion_kits
 from src.core.combat.battle_engine import STOLEN_SCROLL_CHOICE_PREFIX, BattleEngine
+from src.core.combat.targeting import TargetScope
 from src.core.data.data_driven_abilities import DataDrivenSpell
 from src.core.enemies import Barghest, Goblin, GuildArcaneBoss
 from tests.test_framework import TestGameState
@@ -25,6 +26,65 @@ def _make_engine_with_player_attacking():
     engine.attacker = player
     engine.defender = enemy
     return engine, player
+
+
+def test_pre_start_action_scope_uses_player_ability_owner():
+    """Interface projections may query ability scope before initiative starts."""
+    player = TestGameState.create_player(name="TestHero", class_name="Wizard", race_name="Human")
+    player.spellbook["Spells"]["Firebolt"] = abilities.Firebolt()
+    engine = BattleEngine(player, Goblin(), DummyCombatTile())
+
+    assert engine.attacker is None
+    assert engine.target_scope_for_action("Cast Spell", "Firebolt") is TargetScope.SINGLE_ENEMY
+
+
+def test_start_battle_clears_stale_cambion_anti_magic_outside_realm():
+    player = TestGameState.create_player(name="TestHero", class_name="Warrior", race_name="Human")
+    player.location_z = 1
+    player.anti_magic_active = True
+
+    BattleEngine(player, Goblin(), DummyCombatTile()).start_battle()
+
+    assert player.anti_magic_active is False
+
+
+def test_enemy_sleeping_powder_bypasses_required_monocane_inventory():
+    player = TestGameState.create_player(name="TestHero", class_name="Warrior", race_name="Human")
+    enemy = Goblin()
+    enemy.mana.current = 100
+    enemy.spellbook["Skills"]["Sleeping Powder"] = abilities.SleepingPowder()
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    engine.attacker = enemy
+    engine.defender = player
+
+    result = engine.execute_action("Use Skill", "Sleeping Powder")
+
+    assert "does not have a Monocane" not in result.message
+    assert "uses Sleeping Powder" in result.message
+
+
+def test_player_sleeping_powder_still_requires_monocane_inventory():
+    player = TestGameState.create_player(name="TestHero", class_name="Warrior", race_name="Human")
+    player.mana.current = 100
+    player.spellbook["Skills"]["Sleeping Powder"] = abilities.SleepingPowder()
+    enemy = Goblin()
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    engine.attacker = player
+    engine.defender = enemy
+
+    result = engine.execute_action("Use Skill", "Sleeping Powder")
+
+    assert "Monocane is required." in result.message
+
+
+def test_familiar_sleeping_powder_bypasses_required_monocane_inventory():
+    player = TestGameState.create_player(name="TestHero", class_name="Warrior", race_name="Human")
+    target = Goblin()
+    skill = abilities.SleepingPowder()
+
+    message = skill.use(player, target=target, fam=True)
+
+    assert "does not have a Monocane" not in message
 
 
 class FakeJumpSkill:

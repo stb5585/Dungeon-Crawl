@@ -1539,14 +1539,14 @@ class ThievesGuildTrialBoss(Bandit2):
             "Spells": {},
             "Skills": {
                 "Steal": abilities.Steal(),
-                "Smoke Screen": abilities.SmokeScreen(),
+                "Kidney Punch": abilities.KidneyPunch(),
                 "Backstab": abilities.Backstab(),
             },
         }
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Steal", "priority": ActionPriority.NORMAL},
-            {"ability": "Smoke Screen", "priority": ActionPriority.LOW},
+            {"ability": "Kidney Punch", "priority": ActionPriority.LOW},
             {"ability": "Backstab", "priority": ActionPriority.NORMAL},
         ]
 

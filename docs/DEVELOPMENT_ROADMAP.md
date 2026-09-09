@@ -146,3 +146,24 @@ findings using [`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md).
 5. Run focused tests for every changed system before broad validation.
 6. Update the owner document and roadmap in the same change when a gate is
    promoted, completed, or deferred.
+
+## Active Slice — Combat Presentation And Playtest Reliability
+
+The current playtest slice improves action readability without changing combat
+numbers: a persisted six-slot ability bar, compact fixed commands, a
+badge-based timeline without visible readiness calculations, and persistent
+environmental-effect feedback. Character Menu Action Layout is the only
+shortcut editor; All Actions remains the full read-only catalog.
+
+The slice also standardizes stat-debuff wording and lets non-player actors use
+item-gated abilities without carrying or consuming player inventory. Player
+item requirements remain unchanged. Focused regressions cover action
+availability, anti-magic feedback, debuff text, and enemy/familiar ability use.
+
+## Improvements Found on Playtesting
+- selecting an empty action button should do nothing instead of wasting the turn
+- the Action Layout screen in the Character Menu should be designed as a drag and drop-style with the icons; in fact these two menus (Specials and Action Layout) could be rolled into a single tab with the learned abilities (split into skills and spells)
+- currently everything resolves before the end of the combat view closes and before the enemy even fades away; this results in several things updating before needed
+  - level up (HP/MP gain, level change)
+  - timeline portrait badges of deceased targets go away
+- the timeline display in combat and the current actor box should be combined; the blue of the player and red of the enemy can be reused as the outlines of the timeline icons

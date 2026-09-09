@@ -14,7 +14,6 @@ from src.core.combat import ActionIntent, CombatEncounter, TargetScope
 from src.core.combat.action_interface import (
     SYSTEM_COMMANDS,
     CombatActionPresentation,
-    assign_shortcut,
     combat_interface_snapshot,
 )
 from src.core.combat.battle_engine import BattleEngine
@@ -131,6 +130,10 @@ class CombatLifecycleMixin:
             identity_setter(hidden_names)
         labels = ", ".join(member.display_label for member in encounter.members)
         self.combat_view.add_combat_message(f"Combat started with {labels}!")
+        if getattr(player_char, "anti_magic_active", False):
+            self.combat_view.add_combat_message(
+                "An anti-magic field suppresses spells and standard skills in this encounter."
+            )
         self._combat_background = self._capture_background()
         for member in encounter.members:
             self._prepare_enemy_combat_assets(member.enemy)
@@ -624,20 +627,7 @@ class CombatLifecycleMixin:
                 controller_key = self._controller_key(event)
                 if event.type == pygame.KEYDOWN or controller_key is not None:
                     key = event.key if event.type == pygame.KEYDOWN else controller_key
-                    # Match navigation to the adaptive action-grid layout.
-                    layout = getattr(self.combat_view, "_action_grid_layout", None)
-                    actions_per_row = (
-                        layout(
-                            int(getattr(self.combat_view, "combat_width", self.screen.get_width())),
-                            150,
-                            len(actions),
-                        )[0]
-                        if callable(layout)
-                        else 4 if len(actions) > 9 else 3
-                    )
-                    current_row = selected_action // actions_per_row
-                    current_col = selected_action % actions_per_row
-                    (len(actions) + actions_per_row - 1) // actions_per_row
+                    shortcut_count = min(6, len(actions))
 
                     if key == pygame.K_q:
                         self.engine.cycle_focus(-1)
@@ -646,21 +636,27 @@ class CombatLifecycleMixin:
                         self.engine.cycle_focus(1)
                         enemy = self.engine._focused_enemy()
                     elif key == pygame.K_UP or key == pygame.K_w:
-                        # Move up one row
-                        if current_row > 0:
-                            selected_action -= actions_per_row
+                        if selected_action >= shortcut_count:
+                            selected_action = min(
+                                selected_action - shortcut_count, shortcut_count - 1
+                            )
                     elif key == pygame.K_DOWN or key == pygame.K_s:
-                        # Move down one row
-                        new_action = selected_action + actions_per_row
-                        if new_action < len(actions):
-                            selected_action = new_action
+                        if selected_action < shortcut_count and len(actions) > shortcut_count:
+                            selected_action = min(
+                                selected_action + shortcut_count, len(actions) - 1
+                            )
                     elif key == pygame.K_LEFT or key == pygame.K_a:
-                        # Move left one column
-                        if current_col > 0:
+                        if selected_action > 0 and (
+                            selected_action < shortcut_count or selected_action > shortcut_count
+                        ):
                             selected_action -= 1
                     elif key == pygame.K_RIGHT or key == pygame.K_d:
-                        # Move right one column
-                        if current_col < actions_per_row - 1 and selected_action + 1 < len(actions):
+                        row_end = (
+                            shortcut_count - 1
+                            if selected_action < shortcut_count
+                            else len(actions) - 1
+                        )
+                        if selected_action < row_end:
                             selected_action += 1
                     elif key == pygame.K_y:
                         action_result = self._execute_action("All Actions", player_char, enemy)
@@ -860,25 +856,6 @@ class CombatLifecycleMixin:
                         selected = max(0, selected - 10)
                     elif key == pygame.K_PAGEDOWN:
                         selected = min(len(entries) - 1, selected + 10)
-                    elif key in (
-                        pygame.K_1,
-                        pygame.K_2,
-                        pygame.K_3,
-                        pygame.K_4,
-                        pygame.K_5,
-                        pygame.K_6,
-                    ):
-                        reference = entries[selected].reference
-                        if reference is None:
-                            self.combat_view.add_combat_message(
-                                "Only data-backed abilities can be assigned to shortcuts."
-                            )
-                        else:
-                            slot = key - pygame.K_1
-                            assign_shortcut(player_char, slot, reference)
-                            self.combat_view.add_combat_message(
-                                f"Assigned {entries[selected].display_name} to shortcut {slot + 1}."
-                            )
                     elif key in (pygame.K_RETURN, pygame.K_SPACE):
                         return entries[selected]
                     scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
