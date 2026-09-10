@@ -64,7 +64,7 @@ Censure,Censure,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Crusad
 Center the Beast,CenterBeast,Skills,Skill,Defensive,,10,Mana,1.0,,self,False,True,,Lycan,,False,,Werewolf only: defend for two turns and halve the next Frenzy trigger chance.
 Centered Guard,CenteredGuard,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Monk,,False,,Enter a defensive stance for two turns; later talents extend it and add protection.
 Challenge,Challenge,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Mark the current enemy as your Challenged Foe for 3 turns.
-Charge,Charge,Skills,Skill,Offensive,,10,Mana,1.25,,single_enemy,False,True,,Lycan; Sentinel; Templar; Warrior,Clannfear; Direbear; Dragonkin; Giant; Minotaur; Steel Predator,False,,"Charge the enemy, building momentum before stunning them and dealing weapon damage."
+Charge,Charge,Skills,Skill,Offensive,,10,Mana,2.5,,single_enemy,False,True,,Lycan; Sentinel; Templar; Warrior,Clannfear; Direbear; Dragonkin; Giant; Minotaur; Steel Predator,False,,"Charge the enemy, building momentum before stunning them and delivering a devastating weapon strike."
 Chastise,Chastise,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warrior,,False,,Passive: Shield Slam deals 25% more damage.
 Cheat Death,CheatDeath,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Rogue,,False,,"Once per combat, Misfortune can help turn fatal damage into survival at 1 HP."
 Chi Heal,ChiHeal,Skills,Skill,Chi Strike,,16,Mana,1.0,,self,False,True,,Monk,,False,,Channel your chi energy to heal wounds and cleanse all negative status effects.

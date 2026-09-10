@@ -507,7 +507,7 @@ class CombatOutcomeMixin:
                 end_messages = ["Victory! Encounter complete!"]
             elif tamed_victory:
                 end_messages = [f"{enemy.name} tamed!"]
-            elif repelled_victory:
+            elif repelled_victory or getattr(outcome, "enemy_escaped", False):
                 end_messages = [f"{enemy.name} fled from battle!"]
             else:
                 end_messages = [f"Victory! {enemy.name} defeated!"]

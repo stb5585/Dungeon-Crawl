@@ -2,6 +2,7 @@
 
 from src.core import abilities, enemies
 from src.core.classes import wizard
+from src.core.combat.contact import ContactResult
 from src.core.progression import ABILITY_TREES, NodeState, available_nodes
 from tests.test_framework import TestGameState
 
@@ -171,13 +172,18 @@ def test_photon_sphere_is_a_multi_target_four_hit_spell_costing_150_mp():
     assert elemental.target_scope.value == "all_enemies"
 
 
-def test_gravitational_pull_slows_grounded_and_pins_flying_targets():
+def test_gravitational_pull_slows_grounded_and_pins_flying_targets(monkeypatch):
     player = _player()
     grounded = enemies.Goblin()
     grounded.flying = False
     flying = enemies.Goblin()
     flying.flying = True
     spell = abilities.GravitationalPull()
+    monkeypatch.setattr(
+        player,
+        "resolve_contact",
+        lambda *_args, **_kwargs: ContactResult(hit=True, chance=1.0, roll=None, always_hit=True),
+    )
 
     grounded_result = spell.cast(player, grounded)
     flying_result = spell.cast(player, flying)

@@ -248,7 +248,7 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     assert any("No active bounties." in message for message in FakePopup.messages)
 
 
-def test_bounty_accept_counts_prior_defeats_and_can_turn_in_immediately(monkeypatch):
+def test_bounty_accept_starts_at_zero_despite_prior_defeats(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
     player = _make_player(level=20)
@@ -284,12 +284,6 @@ def test_bounty_accept_counts_prior_defeats_and_can_turn_in_immediately(monkeypa
         def set_option_portraits(self, _npc_names):
             return None
 
-        def navigate(self, options, reset_cursor=False, **_kwargs):
-            if self.title == "Turn In Bounty":
-                assert options[0] == "Barghest Hunt"
-                return 0
-            return None
-
         def navigate_with_content(self, items, **_kwargs):
             if self.title == "Accept Bounty":
                 return 0
@@ -299,15 +293,9 @@ def test_bounty_accept_counts_prior_defeats_and_can_turn_in_immediately(monkeypa
 
     manager.accept_bounty()
 
-    assert player.quest_dict["Bounty"]["Barghest Hunt"][1:] == [3, True]
+    assert player.quest_dict["Bounty"]["Barghest Hunt"][1:] == [0, False]
     assert "Barghest Hunt" not in presenter.game.bounties
-    assert any("Prior defeats counted: 3/3" in message for message in FakePopup.messages)
-
-    manager.turn_in_bounty(["Barghest Hunt"])
-
-    assert player.gold == 85
-    assert player.level.exp == 9
-    assert "Barghest Hunt" not in player.quest_dict["Bounty"]
+    assert all("Prior defeats counted" not in message for message in FakePopup.messages)
 
 
 def test_empty_bounty_popup_uses_bounty_board_background(monkeypatch):

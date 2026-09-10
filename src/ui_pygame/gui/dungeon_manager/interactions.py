@@ -134,8 +134,32 @@ class DungeonInteractionMixin:
             self._interact_incubus_lair(current_tile)
         elif "GoldenChaliceRoom" in tile_type:
             self._interact_golden_chalice_room(current_tile)
+        elif map_tiles.definition_for_tile(current_tile) is not None:
+            self._interact_gathering_node(current_tile)
         else:
             self.add_message("There's nothing to interact with here.")
+
+    def _interact_gathering_node(self, tile) -> None:
+        """Harvest a recognized resource node through the standard loot presentation."""
+        if not map_tiles.can_identify_gathering_node(self.player_char, tile):
+            self.add_message(
+                "You lack the knowledge to identify or harvest this unfamiliar growth."
+            )
+            return
+        item = map_tiles.harvest_gathering_node(self.player_char, tile)
+        if item is None:
+            self.add_message("This resource has already been harvested.")
+            return
+        self._mark_view_dirty()
+        self._refresh_cached_frame()
+        self.loot_popup.show_loot(
+            item,
+            "Foraged Resource",
+            background_draw_func=self._draw_cached_popup_background,
+            flush_events=True,
+            require_key_release=True,
+        )
+        self.add_message(f"Gathered {item.name}.")
 
     def _interact_chest(self, chest_tile, tile_type):
         """Handle chest interaction."""
@@ -185,9 +209,14 @@ class DungeonInteractionMixin:
         locked = int("Locked" in tile_type)
         plus = int("ChestRoom2" in tile_type)
         is_funhouse_mimic = "FunhouseMimicChest" in tile_type
-        if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(
-            self.player_char, locked=locked, plus=plus
-        ):
+        mimic_outcome = getattr(chest_tile, "mimic_outcome", None)
+        if not is_funhouse_mimic and mimic_outcome is None:
+            # Compatibility for hand-built tiles and pre-persistence saves.
+            mimic_outcome = map_tiles.ordinary_chest_spawns_mimic(
+                self.player_char, locked=locked, plus=plus
+            )
+            chest_tile.mimic_outcome = mimic_outcome
+        if is_funhouse_mimic or mimic_outcome:
             from src.core import enemies
 
             # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling

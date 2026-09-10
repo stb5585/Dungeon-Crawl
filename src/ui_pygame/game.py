@@ -1079,7 +1079,7 @@ class PygameGame:
         self._play_location_music("shop")
         shop_screen = ShopScreen(self.presenter, self.player_char, "Mara Vale's Counter")
         shop_screen.set_location_portrait("Mara Vale")
-        shop_screen.set_options(["Buy", "Sell", "Ask About Backroom", "Leave"])
+        shop_screen.set_options(["Buy", "Sell", "Quests", "Ask About Backroom", "Leave"])
 
         def bg_func():
             return shop_screen.draw_all(do_flip=False)
@@ -1109,6 +1109,18 @@ class PygameGame:
                 self.shop_manager._active_price_multiplier = 1.0
                 self.shop_manager.sell_items()
                 shop_screen.shop_message = "Mara Vale's Counter"
+            elif choice == "Quests":
+                from .gui.quest_manager import QuestManager
+
+                qm = QuestManager(
+                    self.presenter,
+                    self.player_char,
+                    quest_text_renderer=lambda text: shop_screen.display_quest_text(
+                        text, npc_name="Mara Vale"
+                    ),
+                    renderer_preserve_formatting=True,
+                )
+                qm.check_and_offer("Mara Vale")
             elif choice == "Ask About Backroom":
                 if not thieves_guild.member(self.player_char) and not thieves_guild.can_join(
                     self.player_char

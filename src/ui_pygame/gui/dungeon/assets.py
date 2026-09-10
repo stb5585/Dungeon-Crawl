@@ -72,6 +72,14 @@ DEFAULT_SPECIAL_TEXTURE_PATHS = {
     "rotator": str(MAP_FILES_DIR / "tileset" / "rotator.png"),
 }
 
+GATHERING_FLOOR_OVERLAYS = {
+    "floor_gathering_acorn": "root_growth_sparse",
+    "floor_gathering_vine_seed": "root_growth",
+    "floor_gathering_fungus_spore": "fungus_patch_sparse",
+    "floor_gathering_hemlock_root": "root_growth_dense",
+    "floor_gathering_deathcap_mushroom": "fungus_patch_dense",
+}
+
 SPECIAL_TEXTURE_PATHS = dict(DEFAULT_SPECIAL_TEXTURE_PATHS)
 
 FALLBACK_COLORS = {
@@ -304,7 +312,35 @@ class TextureLibrary:
                 fallback.fill((*FALLBACK_COLORS.get(texture_key, FALLBACK_COLORS["wall"]), 255))
                 self._textures[texture_key] = self._prepare_texture(texture_key, fallback)
 
+        self._build_gathering_floor_textures()
         self._loaded = True
+
+    def _build_gathering_floor_textures(self) -> None:
+        """Composite transparent gathering art over the normal dungeon floor.
+
+        The dedicated floor images are intentionally not used here: they are
+        dark, opaque texture variants and obscure the tile beneath a node.
+        Compositing the supplied transparent overlays keeps a node legible
+        while letting perspective projection anchor it to the floor.
+        """
+        base_floor = self._textures.get("floor")
+        if base_floor is None:
+            return
+        for texture_key, overlay_key in GATHERING_FLOOR_OVERLAYS.items():
+            rel_path = self.special_texture_paths.get(overlay_key)
+            if rel_path is None:
+                self._textures[texture_key] = base_floor
+                continue
+            full_path = self._resolve_asset_path(rel_path)
+            if not os.path.exists(full_path):
+                self._record_asset_fallback("special", overlay_key, full_path)
+                self._textures[texture_key] = base_floor
+                continue
+            overlay = self._load_image_surface(full_path)
+            overlay = pygame.transform.smoothscale(overlay, base_floor.get_size())
+            composite = base_floor.copy()
+            composite.blit(overlay, (0, 0))
+            self._textures[texture_key] = composite
 
     @staticmethod
     def _load_image_surface(path: str | os.PathLike[str]) -> pygame.Surface:
@@ -948,6 +984,23 @@ class TextureLibrary:
     def get_floor_key(self, tile, fallback_tile=None) -> str:
         if self._is_floor_overlay_tile(tile) and fallback_tile is not None:
             return self.get_floor_key(fallback_tile)
+
+        gathering_resource = getattr(tile, "gathering_resource", None)
+        if (
+            gathering_resource
+            and getattr(tile, "gathering_available", False)
+            and not getattr(tile, "gathering_harvested", False)
+        ):
+            gathering_floor_keys = {
+                "acorn": "floor_gathering_acorn",
+                "vine_seed": "floor_gathering_vine_seed",
+                "fungus_spore": "floor_gathering_fungus_spore",
+                "hemlock_root": "floor_gathering_hemlock_root",
+                "deathcap_mushroom": "floor_gathering_deathcap_mushroom",
+            }
+            floor_key = gathering_floor_keys.get(gathering_resource)
+            if floor_key is not None:
+                return floor_key
 
         tile_type = type(tile).__name__ if tile else ""
         if "Funhouse" in tile_type:

@@ -5,7 +5,7 @@ Implements the core tavern logic from town.py adapted for Pygame presenter.
 
 import random
 
-from src.core.town import PATRON_DIALOGUES, TAVERN_FLAVOR_DIALOGUES, prior_bounty_target_defeats
+from src.core.town import PATRON_DIALOGUES, TAVERN_FLAVOR_DIALOGUES
 
 from .confirmation_popup import ConfirmationPopup
 from .level_up import LevelUpScreen
@@ -237,30 +237,21 @@ class InnManager(TownScreenBase):
             if enemy_name == "Unknown" and isinstance(enemy_obj, str):
                 enemy_name = enemy_obj
             required = self._bounty_required_count(bounty_data)
-            prior_defeats = min(
-                required,
-                prior_bounty_target_defeats(self.player_char, bounty_data),
-            )
-            completed = prior_defeats >= required
 
             # Add bounty to player's quest dict
             self.player_char.quest_dict["Bounty"][bounty_name] = [
                 bounty_data,
-                prior_defeats,
-                completed,
+                0,
+                False,
             ]
             self._remove_board_bounty(bounty_name)
 
             # Show bounty info
-            progress_line = (
-                f"\nPrior defeats counted: {prior_defeats}/{required}" if prior_defeats else ""
-            )
             info_msg = (
                 f"Bounty Accepted: {bounty_name}\n"
                 f"Target: {enemy_name}\n"
                 f"Enemies to defeat: {required}\n"
                 f"Reward: {bounty_data.get('gold', 0)} Gold, {bounty_data.get('exp', 0)} Experience"
-                f"{progress_line}"
             )
             popup = ConfirmationPopup(self.presenter, info_msg, show_buttons=False)
             popup.show(**self.popup_show_kwargs())

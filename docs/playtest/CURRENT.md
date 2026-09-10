@@ -63,6 +63,10 @@ or a proposed, separately approved tuning slice.
   report-back and creation of `The Holy Relics`.
 - Verify normal death, special-route defeat, town return, and postgame town
   dialogue.
+- On floors 1–6, verify visible gathering-node overlays. Druid/Archdruid should
+  identify and explicitly harvest Acorn, Vine Seed, Fungus Spore, and Hemlock
+  Root; Assassin should identify and explicitly harvest Deathcap Mushroom.
+  Other classes should see unfamiliar growth but receive no harvest action.
 - Verify the Vesperion/Voluntas route, Liminal trials, Reflection, true-final
   completion, and ending continuity.
 
@@ -82,7 +86,8 @@ The comprehensive readiness pass is complete when:
 ## Current Focus — Combat Presentation
 
 - Reconfigure shortcuts by dragging Skill and Spell icons in Character Menu →
-  Abilities, then verify keys 1–6, mouse, and controller activation in combat.
+  Abilities, then verify keys 1–6, mouse, touch, and controller activation in
+  combat. Arrow-key navigation and Enter must skip the shortcut tiles.
 - Clear a shortcut and confirm selecting its empty combat slot does not advance
   the turn.
 - Confirm the ability bar preserves unavailable-action reasons and All Actions
@@ -91,6 +96,15 @@ The comprehensive readiness pass is complete when:
   blue player-side and red enemy-side outlines, and no readiness values.
 - Win a fight and confirm defeated timeline badges remain through the enemy
   fade, with level and HP/MP changes appearing only after the fade completes.
+- Turn in a collection quest and confirm its retained journal entry shows its
+  completed count (for example, 6/6), not 0/6.
+- Die in the dungeon, return to town, then re-enter it; confirm the first frame
+  is freshly rendered rather than a stale dungeon view.
+- Inspect Monocane and crossbows, bolts, venoms, and other catalog items to
+  confirm each has an item icon.
+- Save and reload before and after gathering a resource node. Confirm the node
+  remains available before harvest and absent afterward, while existing enemy
+  reagent drops and toxin/Plant Seeds use remain unchanged.
 - Enter an anti-magic encounter and verify the persistent field badge and its
   one-time combat-entry explanation before selecting an ability.
 - Exercise Sleeping Powder or Smoke Screen on an enemy and a familiar without

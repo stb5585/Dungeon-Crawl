@@ -2285,7 +2285,50 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     )
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Defend"]
+
+    manager.available_actions = [
+        "1. Skill: Strike",
+        "2. Skill: Guard",
+        "3. Spell: Spark",
+        "4. Spell: Ward",
+        "5. Empty",
+        "6. Empty",
+        "Attack",
+        "Flee",
+    ]
+    actions.clear()
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
+    assert manager._player_turn(player, enemy) is True
+    assert actions == ["Attack"]
     assert manager.combat_view.messages[-1] == "Fairy assists"
+
+    actions.clear()
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    shortcut_rect = manager._combat_action_rects(manager.available_actions)[1]
+    event_batches = iter(
+        [
+            [
+                SimpleNamespace(
+                    type=pygame.FINGERUP,
+                    x=shortcut_rect.centerx / manager.screen.get_width(),
+                    y=shortcut_rect.centery / manager.screen.get_height(),
+                )
+            ]
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
+    assert manager._player_turn(player, enemy) is True
+    assert actions == ["2. Skill: Guard"]
 
     manager.available_actions = ["Attack", "Defend", "Items"]
     actions.clear()

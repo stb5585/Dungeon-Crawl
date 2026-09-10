@@ -1390,6 +1390,7 @@ def test_quest_popup_build_and_details_cover_main_side_and_bounty(monkeypatch):
     popup.draw_details(player)
     assert "Description:" in presenter.normal_font.render_calls
     assert any("dragon has returned" in call for call in presenter.normal_font.render_calls)
+    assert "Defeated: 0/1" in presenter.normal_font.render_calls
     assert popup.on_select(player, popup.items[0]) is None
 
 
@@ -1423,6 +1424,36 @@ def test_quest_popup_draws_reward_icons(monkeypatch):
 
     assert icon_calls == ["Gold"]
     assert "50 Gold" in presenter.normal_font.render_calls
+
+
+def test_turned_in_collection_quest_retains_completed_progress(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    player.inventory = {}
+    player.special_inventory = {}
+    player.quest_dict = {
+        "Side": {
+            "Rat Trap": {
+                "Type": "Collect",
+                "What": "RatTail",
+                "Total": 6,
+                "Completed": True,
+                "Turned In": True,
+            }
+        }
+    }
+    popup = popup_menus.QuestPopupMenu(presenter, parent)
+    popup.build_items(player)
+    popup.selected_index = next(
+        index for index, item in enumerate(popup.items) if isinstance(item, tuple)
+    )
+
+    popup.draw_details(player)
+
+    assert "Collected: 6/6" in presenter.normal_font.render_calls
+    assert "Collected: 0/6" not in presenter.normal_font.render_calls
 
 
 def test_quest_popup_draws_bounty_rewards_like_regular_rewards(monkeypatch):

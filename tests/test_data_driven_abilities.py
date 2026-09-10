@@ -5140,10 +5140,15 @@ class TestBatch12ElementalStrike:
                 break
         assert element_seen, "ElementalStrike should mention elemental force on hit"
 
-    def test_elemental_strike_does_not_embed_nested_spell_damage_log(self):
+    def test_elemental_strike_does_not_embed_nested_spell_damage_log(self, monkeypatch):
         from src.core import abilities
 
         user, target = self._make_combatants()
+        monkeypatch.setattr(
+            user,
+            "weapon_damage",
+            lambda *_args, **_kwargs: ("Spellblade strikes.\n", True, 1),
+        )
         result = abilities.ElementalStrike().use(user, target)
         msg = str(result)
         assert "elemental force" in msg.lower()
@@ -8593,6 +8598,7 @@ class TestBatch15Charge:
         assert isinstance(charge, DataDrivenChargingSkill)
         assert charge.name == "Charge"
         assert charge.cost == 10
+        assert charge.dmg_mod == 2.5
 
     def test_charge_starts_charging_phase(self):
         """With charge_time > 0, first use starts charging."""

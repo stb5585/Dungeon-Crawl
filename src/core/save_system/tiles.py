@@ -24,8 +24,10 @@ class TileStateSerializer:
             "nimue_met_before",
             "trap_type",
             "trap_triggered",
-            "deathcap_available",
-            "deathcap_gathered",
+            "gathering_resource",
+            "gathering_available",
+            "gathering_harvested",
+            "mimic_outcome",
         }
     )
 
@@ -66,10 +68,12 @@ class TileStateSerializer:
                 state["trap_triggered"] = tile.trap_triggered
             if hasattr(tile, "trap_warned"):
                 state["trap_warned"] = tile.trap_warned
-            if hasattr(tile, "deathcap_available"):
-                state["deathcap_available"] = tile.deathcap_available
-            if hasattr(tile, "deathcap_gathered"):
-                state["deathcap_gathered"] = tile.deathcap_gathered
+            if hasattr(tile, "gathering_resource"):
+                state["gathering_resource"] = tile.gathering_resource
+                state["gathering_available"] = tile.gathering_available
+                state["gathering_harvested"] = tile.gathering_harvested
+            if hasattr(tile, "mimic_outcome"):
+                state["mimic_outcome"] = tile.mimic_outcome
 
             if hasattr(tile, "active"):
                 state["active"] = tile.active
@@ -95,6 +99,8 @@ class TileStateSerializer:
     @staticmethod
     def restore_tile_state(world_dict: dict, tile_states: dict) -> None:
         """Restore tile state from serialized data."""
+        from src.core import map_tiles
+
         for pos_str, state in tile_states.items():
             if not isinstance(state, dict):
                 continue
@@ -130,10 +136,22 @@ class TileStateSerializer:
                 tile.trap_triggered = state["trap_triggered"]
             if "trap_warned" in state and hasattr(tile, "trap_warned"):
                 tile.trap_warned = state["trap_warned"]
-            if "deathcap_available" in state and hasattr(tile, "deathcap_available"):
-                tile.deathcap_available = state["deathcap_available"]
-            if "deathcap_gathered" in state and hasattr(tile, "deathcap_gathered"):
-                tile.deathcap_gathered = state["deathcap_gathered"]
+            if "gathering_resource" in state and hasattr(tile, "gathering_resource"):
+                resource_id = state["gathering_resource"]
+                if resource_id in map_tiles.GATHERING_NODES:
+                    tile.gathering_resource = resource_id
+                    tile.gathering_available = bool(state.get("gathering_available", False))
+                    tile.gathering_harvested = bool(state.get("gathering_harvested", False))
+            elif hasattr(tile, "gathering_resource") and (
+                state.get("deathcap_available") or state.get("deathcap_gathered")
+            ):
+                tile.gathering_resource = "deathcap_mushroom"
+                tile.gathering_available = bool(state.get("deathcap_available", False))
+                tile.gathering_harvested = bool(state.get("deathcap_gathered", False))
+            if "mimic_outcome" in state and hasattr(tile, "mimic_outcome"):
+                outcome = state["mimic_outcome"]
+                if isinstance(outcome, bool):
+                    tile.mimic_outcome = outcome
 
             # Restore defeated flag
             if "defeated" in state and hasattr(tile, "defeated"):

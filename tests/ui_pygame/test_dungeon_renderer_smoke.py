@@ -769,6 +769,26 @@ def test_rookie_body_sprite_respects_player_quest_gate():
     pygame.quit()
 
 
+def test_gathering_tiles_use_resource_specific_projected_floor_textures():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    tile = OpenTile()
+    tile.gathering_resource = "deathcap_mushroom"
+    tile.gathering_available = True
+    tile.gathering_harvested = False
+    assert scene_renderer.textures.get_floor_key(tile) == "floor_gathering_deathcap_mushroom"
+
+    tile.gathering_resource = "acorn"
+    assert scene_renderer.textures.get_floor_key(tile) == "floor_gathering_acorn"
+
+    tile.gathering_harvested = True
+    assert scene_renderer.textures.get_floor_key(tile) == "floor"
+
+    pygame.quit()
+
+
 def test_blood_overlay_keys_and_render_hooks():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -2663,6 +2683,33 @@ def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
     assert lateral_view is False
     assert abs(rect.y - round(expected_bounds.y)) <= 1
     assert abs(rect.bottom - round(expected_bounds.y + expected_bounds.h)) <= 1
+
+    pygame.quit()
+
+
+def test_scene_renderer_projects_gathering_node_as_part_of_its_floor_tile():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    gathering_tile = OpenTile()
+    gathering_tile.gathering_resource = "fungus_spore"
+    gathering_tile.gathering_available = True
+    gathering_tile.gathering_harvested = False
+    world = {
+        (0, 0, 1): gathering_tile,
+        (1, 0, 1): OpenTile(),
+        (2, 0, 1): OpenTile(),
+        (0, -1, 1): WallTile(),
+        (0, 1, 1): WallTile(),
+        (1, -1, 1): WallTile(),
+        (1, 1, 1): WallTile(),
+    }
+
+    commands, _ = _build_scene_commands(scene_renderer, player, world)
+    current_floor = next(command for command in commands if command.panel_id == "d1:center_floor")
+    assert current_floor.texture_key == "floor_gathering_fungus_spore"
 
     pygame.quit()
 

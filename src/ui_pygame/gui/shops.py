@@ -239,7 +239,7 @@ class ShopManager(TownScreenBase):
         shop_screen = ShopScreen(self.presenter, self.player_char, self.MAGIC_SHOP_MESSAGE)
         self._active_shopkeeper_portrait = self.MAGIC_SHOPKEEPER
         self._set_shopkeeper_portrait(shop_screen)
-        shop_screen.set_options(["Buy", "Sell", "Leave"])
+        shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
 
         while True:
             choice = shop_screen.navigate_options()
@@ -255,6 +255,18 @@ class ShopManager(TownScreenBase):
                 shop_screen.shop_message = self.MAGIC_SHOP_MESSAGE
             elif choice == "Sell":
                 self.sell_items()
+            elif choice == "Quests":
+                from .quest_manager import QuestManager
+
+                qm = QuestManager(
+                    self.presenter,
+                    self.player_char,
+                    quest_text_renderer=lambda text: shop_screen.display_quest_text(
+                        text, npc_name=self.MAGIC_SHOPKEEPER
+                    ),
+                    renderer_preserve_formatting=True,
+                )
+                qm.check_and_offer(self.MAGIC_SHOPKEEPER)
 
     def buy_weapons(self):
         """Buy weapons - choose handedness first, then browse subtype tabs."""

@@ -48,6 +48,16 @@ from .endgame import (
     UltimateArmorShop,
     WarpPoint,
 )
+from .gathering import (
+    GATHERING_NODE_CHANCE,
+    GATHERING_NODES,
+    GatheringNodeDefinition,
+    assign_dungeon_gathering_nodes,
+    can_identify_gathering_node,
+    definition_for_tile,
+    gathering_hint,
+    harvest_gathering_node,
+)
 from .paths import (
     BonePileTile,
     BossPath,
@@ -130,6 +140,7 @@ from .rules import (
     _replace_tile,
     _set_chalice_map_description,
     active_random_encounter_quest_targets,
+    assign_dungeon_chest_mimics,
     cambion_anti_magic_active,
     chalice_altar_visible,
     chalice_map_preview_text,

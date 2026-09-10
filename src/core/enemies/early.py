@@ -171,6 +171,7 @@ class GreenSlime(Slime):
         }
         self.gold = random.randint(1, 8)
         self.inventory["Key"] = [items.Key]
+        self.inventory["Fungus Spore"] = [items.FungusSpore]
         self.spellbook = {
             "Spells": {"Enfeeble": abilities.Enfeeble()},
             "Skills": {"Acid Spit": abilities.AcidSpit()},
@@ -1638,6 +1639,7 @@ class RedSlime(Slime):
         }
         self.gold = random.randint(40, 65)
         self.inventory["Mana Potion"] = [items.ManaPotion]
+        self.inventory["Fungus Spore"] = [items.FungusSpore]
         self.spellbook = {
             "Spells": {"Firebolt": abilities.Firebolt(), "Enfeeble": abilities.Enfeeble()},
             "Skills": {},

@@ -80,6 +80,33 @@ def test_enemy_flee_is_recorded_without_ending_combat_as_player_flee():
     assert "flees from battle" in result.message
 
 
+def test_escaped_single_enemy_awards_no_victory_rewards(monkeypatch):
+    player = TestGameState.create_player(class_name="Warrior", level=30)
+    enemy = Goblin()
+    tile = _Tile()
+    tile.enemy = enemy
+    engine = BattleEngine(player, enemy, tile)
+    engine.attacker = enemy
+    engine.defender = player
+    monkeypatch.setattr(
+        "src.core.classes.footpad.aggressive_pursuit",
+        lambda _player, _enemy: (True, "Goblin flees from battle.\n"),
+    )
+    starting_experience = player.level.exp
+    starting_gold = player.gold
+
+    engine.execute_action("Flee")
+    outcome = engine.end_battle()
+
+    assert outcome.result == "victory"
+    assert outcome.enemy_escaped is True
+    assert "escaped the encounter" in outcome.message
+    assert player.level.exp == starting_experience
+    assert player.gold == starting_gold
+    assert player.gameplay_stats["enemies_defeated"] == 0
+    assert tile.enemy is None
+
+
 def test_priority_enemy_ai_can_choose_flee_when_player_outclasses_it(monkeypatch):
     player = TestGameState.create_player(
         class_name="Grandmaster of Arms",

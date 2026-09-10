@@ -5,7 +5,7 @@ import traceback
 
 import pygame
 
-from src.core import map_tiles
+from src.core import map_tiles, quest_progress
 from src.core.abilities import detects_encounter
 from src.core.player import DIRECTIONS
 
@@ -85,6 +85,13 @@ class DungeonExplorationMixin:
                 enemy = self._resolve_tile_enemy(current_tile)
                 if enemy:
                     messages.append(f"A {enemy.name} blocks your path!")
+            gathering_message = map_tiles.gathering_hint(
+                self.player_char,
+                current_tile,
+                current_tile=True,
+            )
+            if gathering_message:
+                messages.append(gathering_message)
 
         # Check tile ahead (for interactive objects like chests, doors, relics)
         direction = self.player_char.facing
@@ -158,6 +165,13 @@ class DungeonExplorationMixin:
                         messages.append(
                             "A golden chalice rests on a pedestal ahead! (Press O to take)"
                         )
+            gathering_message = map_tiles.gathering_hint(
+                self.player_char,
+                ahead_tile,
+                current_tile=False,
+            )
+            if gathering_message:
+                messages.append(gathering_message)
 
         return messages if messages else None
 
@@ -166,6 +180,13 @@ class DungeonExplorationMixin:
         current_tile = self.get_current_tile()
         if not current_tile:
             return
+
+        location_message = quest_progress.record_location(
+            self.player_char,
+            (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z),
+        )
+        if location_message:
+            self.add_message(location_message.rstrip())
 
         # Golden Chalice quest progression hooks
         try:
@@ -339,6 +360,9 @@ class DungeonExplorationMixin:
                 else:
                     self.add_message("You were defeated...")
                     self._detach_dungeon_background_provider()
+                    self._cached_view = None
+                    self._cached_frame = None
+                    self._mark_view_dirty()
                     death_message = self.player_char.death()
                     for line in str(death_message or "").splitlines():
                         if line.strip():
@@ -363,6 +387,11 @@ class DungeonExplorationMixin:
         Main dungeon exploration loop.
         Returns when player exits dungeon (returns to town, quits, etc.)
         """
+        # A prior death or dungeon exit may have left a cached frame from another location.
+        self._cached_view = None
+        self._cached_frame = None
+        self._mark_view_dirty()
+
         # Always show a loading screen on entry. If we're in town coordinates, use a descending message.
         if hasattr(self.player_char, "in_town") and callable(self.player_char.in_town):
             msg = (

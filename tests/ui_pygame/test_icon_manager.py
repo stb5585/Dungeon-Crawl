@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.core import items
+from src.core.items.catalog import items_dict
 from src.ui_pygame.assets import icon_manager
 from src.ui_pygame.assets.icon_manager import IconManager
 
@@ -159,6 +160,31 @@ def test_default_item_icon_map_resolves_new_tools_without_warning(caplog):
         assert manager.icon_key_for_item(items.Oculus()) == "gem"
 
     assert "Item icon mapping missing" not in caplog.text
+
+
+def test_default_item_icon_map_covers_every_catalog_item():
+    manager = IconManager()
+    item_classes = []
+
+    def collect_classes(value):
+        if isinstance(value, dict):
+            for child in value.values():
+                collect_classes(child)
+        elif isinstance(value, (list, tuple)):
+            for child in value:
+                collect_classes(child)
+        elif isinstance(value, type):
+            item_classes.append(value)
+
+    collect_classes(items_dict)
+
+    missing_names = [
+        item_class().name
+        for item_class in item_classes
+        if item_class().name not in manager.item_map
+    ]
+
+    assert missing_names == []
 
 
 def test_icon_manager_slot_and_generic_fallbacks(tmp_path):

@@ -64,6 +64,27 @@ def ordinary_chest_spawns_mimic(
     return (random.random() if roll is None else float(roll)) < chance
 
 
+def assign_dungeon_chest_mimics(world_dict: dict, player_char, *, rng=None) -> int:
+    """Assign stable Mimic outcomes to ordinary chests in a generated dungeon."""
+    source = rng if rng is not None else random
+    assigned = 0
+    for _position, tile in sorted(world_dict.items()):
+        if type(tile).__name__ == "FunhouseMimicChest" or not hasattr(tile, "mimic_outcome"):
+            continue
+        if getattr(tile, "mimic_outcome", None) is not None:
+            continue
+        locked = int(bool(getattr(tile, "locked", False)))
+        plus = int(type(tile).__name__.endswith("2"))
+        tile.mimic_outcome = ordinary_chest_spawns_mimic(
+            player_char,
+            locked=locked,
+            plus=plus,
+            roll=source.random(),
+        )
+        assigned += 1
+    return assigned
+
+
 CHALICE_QUEST_NAME = "The Holy Grail of Quests"
 CHALICE_PROGRESS_KEY = "Chalice Progress"
 CHALICE_ADVENTURER_POS = (12, 14, 3)

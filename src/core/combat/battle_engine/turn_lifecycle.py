@@ -419,6 +419,20 @@ class TurnLifecycleMixin:
             if hasattr(self.player, "_grandmaster_battle_hit_types"):
                 self.player._grandmaster_battle_hit_types.clear()
             self.tile.enemy = None
+        elif self.encounter.primary_member.resolution is EnemyResolution.ESCAPED:
+            outcome.result = "victory"
+            outcome.winner = self.player.name
+            outcome.enemy_escaped = True
+            outcome.message = f"{enemy.name} escaped the encounter.\n"
+            outcome.message += promotion_kits.end_combat(
+                self.player,
+                victory=False,
+                enemy=enemy,
+            )
+            self.player.state = "normal"
+            self.player.effects(end=True)
+            enemy.effects(end=True)
+            self.tile.enemy = None
         elif self.player.is_alive():
             outcome.result = "victory"
             outcome.winner = self.player.name

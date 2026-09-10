@@ -278,12 +278,16 @@ def test_new_holy_and_variance_enemies_have_authored_kits_and_resistances():
 
 def test_reagent_drop_sources_are_themed():
     treant = enemies.Treant()
+    green_slime = enemies.GreenSlime()
+    red_slime = enemies.RedSlime()
     black_slime = enemies.BlackSlime()
     brown_slime = enemies.BrownSlime()
     night_hag = enemies.NightHag()
 
     assert treant.inventory["Acorn"] == [items.Acorn]
     assert treant.inventory["Vine Seed"] == [items.VineSeed]
+    assert green_slime.inventory["Fungus Spore"] == [items.FungusSpore]
+    assert red_slime.inventory["Fungus Spore"] == [items.FungusSpore]
     assert black_slime.inventory["Fungus Spore"] == [items.FungusSpore]
     assert brown_slime.inventory["Fungus Spore"] == [items.FungusSpore]
     assert night_hag.inventory["Hemlock Root"] == [items.HemlockRoot]
