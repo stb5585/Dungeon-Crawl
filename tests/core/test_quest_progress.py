@@ -83,21 +83,35 @@ def test_location_and_conversation_objectives_complete_only_matching_active_ques
     player = _player()
     player.quest_dict["Side"] = {
         "Find the Spring": {
-            "Type": "Locate", "Target Position": [4, 9, 3], "Completed": False,
+            "Type": "Locate",
+            "Target Position": [4, 9, 3],
+            "Completed": False,
             "Turned In": False,
         },
         "Speak to Griswold": {
-            "Type": "Talk", "What": "Griswold", "Completed": False, "Turned In": False,
+            "Type": "Talk",
+            "What": "Griswold",
+            "Completed": False,
+            "Turned In": False,
         },
         "Already Done": {
-            "Type": "Talk", "What": "Griswold", "Completed": True, "Turned In": False,
+            "Type": "Talk",
+            "What": "Griswold",
+            "Completed": True,
+            "Turned In": False,
         },
     }
 
     assert quest_progress.record_location(player, (1, 1, 1)) == ""
-    assert quest_progress.record_location(player, (4, 9, 3)) == "You have completed the quest Find the Spring.\n"
+    assert (
+        quest_progress.record_location(player, (4, 9, 3))
+        == "You have completed the quest Find the Spring.\n"
+    )
     assert quest_progress.record_conversation(player, "Barkeep") == ""
-    assert quest_progress.record_conversation(player, "Griswold") == "You have completed the quest Speak to Griswold.\n"
+    assert (
+        quest_progress.record_conversation(player, "Griswold")
+        == "You have completed the quest Speak to Griswold.\n"
+    )
     assert player.quest_dict["Side"]["Already Done"]["Completed"] is True
 
 
@@ -142,8 +156,11 @@ def test_bounty_kills_also_advance_matching_side_defeat_objectives():
         "Main": {},
         "Side": {
             "Mara's Contract": {
-                "Type": "Defeat", "What": "Bandit", "Total": 2,
-                "Completed": False, "Turned In": False,
+                "Type": "Defeat",
+                "What": "Bandit",
+                "Total": 2,
+                "Completed": False,
+                "Turned In": False,
             }
         },
         "Bounty": {"Bandit": [{"num": 3}, 0, False]},

@@ -2708,11 +2708,7 @@ def test_scene_renderer_projects_gathering_node_as_part_of_its_floor_tile():
     }
 
     commands, _ = _build_scene_commands(scene_renderer, player, world)
-    current_floor = next(
-        command
-        for command in commands
-        if command.panel_id == "d1:center_floor"
-    )
+    current_floor = next(command for command in commands if command.panel_id == "d1:center_floor")
     assert current_floor.texture_key == "floor_gathering_fungus_spore"
 
     pygame.quit()
