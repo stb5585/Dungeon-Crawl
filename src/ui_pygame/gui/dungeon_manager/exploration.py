@@ -339,6 +339,9 @@ class DungeonExplorationMixin:
                 else:
                     self.add_message("You were defeated...")
                     self._detach_dungeon_background_provider()
+                    self._cached_view = None
+                    self._cached_frame = None
+                    self._mark_view_dirty()
                     death_message = self.player_char.death()
                     for line in str(death_message or "").splitlines():
                         if line.strip():
@@ -363,6 +366,11 @@ class DungeonExplorationMixin:
         Main dungeon exploration loop.
         Returns when player exits dungeon (returns to town, quits, etc.)
         """
+        # A prior death or dungeon exit may have left a cached frame from another location.
+        self._cached_view = None
+        self._cached_frame = None
+        self._mark_view_dirty()
+
         # Always show a loading screen on entry. If we're in town coordinates, use a descending message.
         if hasattr(self.player_char, "in_town") and callable(self.player_char.in_town):
             msg = (

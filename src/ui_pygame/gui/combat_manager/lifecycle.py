@@ -602,7 +602,8 @@ class CombatLifecycleMixin:
 
         # Get available actions
         actions = self.available_actions
-        selected_action = 0
+        shortcut_count = 6 if len(actions) > 6 else 0
+        selected_action = shortcut_count if len(actions) > shortcut_count else -1
         input_armed = self._clear_pending_input()
 
         action_taken = False
@@ -628,7 +629,6 @@ class CombatLifecycleMixin:
                 controller_key = self._controller_key(event)
                 if event.type == pygame.KEYDOWN or controller_key is not None:
                     key = event.key if event.type == pygame.KEYDOWN else controller_key
-                    shortcut_count = min(6, len(actions))
 
                     if key == pygame.K_q:
                         self.engine.cycle_focus(-1)
@@ -637,27 +637,14 @@ class CombatLifecycleMixin:
                         self.engine.cycle_focus(1)
                         enemy = self.engine._focused_enemy()
                     elif key == pygame.K_UP or key == pygame.K_w:
-                        if selected_action >= shortcut_count:
-                            selected_action = min(
-                                selected_action - shortcut_count, shortcut_count - 1
-                            )
+                        continue
                     elif key == pygame.K_DOWN or key == pygame.K_s:
-                        if selected_action < shortcut_count and len(actions) > shortcut_count:
-                            selected_action = min(
-                                selected_action + shortcut_count, len(actions) - 1
-                            )
+                        continue
                     elif key == pygame.K_LEFT or key == pygame.K_a:
-                        if selected_action > 0 and (
-                            selected_action < shortcut_count or selected_action > shortcut_count
-                        ):
+                        if selected_action > shortcut_count:
                             selected_action -= 1
                     elif key == pygame.K_RIGHT or key == pygame.K_d:
-                        row_end = (
-                            shortcut_count - 1
-                            if selected_action < shortcut_count
-                            else len(actions) - 1
-                        )
-                        if selected_action < row_end:
+                        if shortcut_count <= selected_action < len(actions) - 1:
                             selected_action += 1
                     elif key == pygame.K_y:
                         action_result = self._execute_action("All Actions", player_char, enemy)
@@ -668,7 +655,8 @@ class CombatLifecycleMixin:
                     elif key == pygame.K_x:
                         self._show_combat_resource_details(player_char)
                     elif key == pygame.K_RETURN or key == pygame.K_SPACE:
-                        # Execute selected action
+                        if selected_action < shortcut_count:
+                            continue
                         action_result = self._execute_action(
                             actions[selected_action], player_char, enemy
                         )
@@ -704,10 +692,23 @@ class CombatLifecycleMixin:
                                 break
                             elif action_result is not None:
                                 action_taken = True
-                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
-                    if is_left_click(event) and input_armed:
+                elif event.type in (
+                    pygame.MOUSEMOTION,
+                    pygame.MOUSEBUTTONDOWN,
+                    pygame.FINGERDOWN,
+                    pygame.FINGERUP,
+                ):
+                    position = mouse_position(event)
+                    finger_event = event.type in (pygame.FINGERDOWN, pygame.FINGERUP)
+                    if finger_event:
+                        position = (
+                            int(getattr(event, "x", 0.0) * self.screen.get_width()),
+                            int(getattr(event, "y", 0.0) * self.screen.get_height()),
+                        )
+                    activated = is_left_click(event) or event.type == pygame.FINGERUP
+                    if activated and input_armed:
                         card_at = getattr(self.combat_view, "enemy_card_at", None)
-                        target_id = card_at(mouse_position(event)) if callable(card_at) else None
+                        target_id = card_at(position) if callable(card_at) else None
                         if target_id is not None:
                             try:
                                 self.engine.set_focus_target(target_id)
@@ -715,14 +716,15 @@ class CombatLifecycleMixin:
                             except (KeyError, ValueError):
                                 pass
                             continue
-                    hovered = hit_index(self._combat_action_rects(actions), mouse_position(event))
+                    hovered = hit_index(self._combat_action_rects(actions), position)
                     if hovered is None:
                         continue
-                    selected_action = hovered
-                    if not is_left_click(event) or not input_armed:
+                    if hovered >= shortcut_count:
+                        selected_action = hovered
+                    if not activated or not input_armed:
                         continue
                     action_result = self._execute_action(
-                        actions[selected_action],
+                        actions[hovered],
                         player_char,
                         enemy,
                     )

@@ -1425,6 +1425,36 @@ def test_quest_popup_draws_reward_icons(monkeypatch):
     assert "50 Gold" in presenter.normal_font.render_calls
 
 
+def test_turned_in_collection_quest_retains_completed_progress(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    player.inventory = {}
+    player.special_inventory = {}
+    player.quest_dict = {
+        "Side": {
+            "Rat Trap": {
+                "Type": "Collect",
+                "What": "RatTail",
+                "Total": 6,
+                "Completed": True,
+                "Turned In": True,
+            }
+        }
+    }
+    popup = popup_menus.QuestPopupMenu(presenter, parent)
+    popup.build_items(player)
+    popup.selected_index = next(
+        index for index, item in enumerate(popup.items) if isinstance(item, tuple)
+    )
+
+    popup.draw_details(player)
+
+    assert "Collected: 6/6" in presenter.normal_font.render_calls
+    assert "Collected: 0/6" not in presenter.normal_font.render_calls
+
+
 def test_quest_popup_draws_bounty_rewards_like_regular_rewards(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

@@ -1211,6 +1211,10 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: False
     player.is_alive = lambda: False
     manager.running = True
+    manager._cached_view = "stale-dungeon-view"
+    manager._cached_frame = "stale-dungeon-frame"
+    manager.view_dirty = False
+    manager.ui_dirty = False
     manager._check_tile_effects()
     assert "exit-funhouse" in manager.messages
     assert manager.running is False
@@ -1228,6 +1232,9 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     assert "to-town-after-detach" not in manager.messages
     assert manager.messages.count("town-loading") == loading_count
     assert manager.running is False
+    assert manager._cached_view is None
+    assert manager._cached_frame is None
+    assert manager.view_dirty is True and manager.ui_dirty is True
 
     popup_events = iter(
         [
@@ -2758,6 +2765,8 @@ def test_explore_dungeon_does_not_render_after_keypress_returns_to_town(monkeypa
     manager, _presenter, player, game = _make_manager(monkeypatch)
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = DummyTile()
     game.debug_mode = False
+    manager._cached_view = "stale-dungeon-view"
+    manager._cached_frame = "stale-dungeon-frame"
     manager._show_dungeon_loading_screen = lambda *_args, **_kwargs: None
     manager._handle_keypress = lambda _key: player.to_town()
     manager._check_random_cry = lambda: None
@@ -2783,6 +2792,8 @@ def test_explore_dungeon_does_not_render_after_keypress_returns_to_town(monkeypa
     assert "render-after-town" not in manager.messages
     assert "flip" not in manager.messages
     assert "reset-log" in manager.messages
+    assert manager._cached_view is None
+    assert manager._cached_frame is None
 
 
 def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch):

@@ -171,3 +171,11 @@ availability, anti-magic feedback, debuff text, and enemy/familiar ability use.
 - Defeated timeline badges remain until their sprites finish fading.
 - The current actor is integrated into the timeline ribbon, with blue player-side
   and red enemy-side token outlines.
+- Turned-in collection quests retain their completed collection count instead of
+  reverting to zero progress.
+- Dungeon entry and death clear cached dungeon frames before the next view is
+  rendered.
+- The item-icon map covers every catalog item, including Monocane and crossbow
+  equipment and ammunition.
+- Keyboard menu navigation skips shortcut tiles; shortcuts remain available by
+  number key, mouse click, or touch.

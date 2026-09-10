@@ -315,7 +315,12 @@ class QuestPopupMenu(BasePopupMenu):
                         ):
                             current += len(item_list)
 
-            text = self.normal_font.render(f"Collected: {current}/{total}", True, self.WHITE)
+            displayed_current = total if quest_data.get("Turned In", False) else current
+            text = self.normal_font.render(
+                f"Collected: {displayed_current}/{total}",
+                True,
+                self.WHITE,
+            )
             self.screen.blit(text, (x, y))
             y += self.line_height
         elif quest_type == "Locate":
