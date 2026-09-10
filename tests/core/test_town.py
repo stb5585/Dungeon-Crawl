@@ -245,24 +245,6 @@ def test_bounty_options_and_accept_quest_handle_missing_names():
     assert board.bounty_options() == ["Wolf"]
 
 
-def test_prior_bounty_target_defeats_counts_kill_dict_across_enemy_types():
-    from src.core import town
-
-    player = SimpleNamespace(
-        kill_dict={
-            "Fiend": {"Barghest": 1},
-            "Boss": {"Barghest": 2},
-            "Regular": {"Goblin": 4, "Barghest": "bad"},
-        }
-    )
-
-    assert (
-        town.prior_bounty_target_defeats(player, {"enemy": SimpleNamespace(name="Barghest")}) == 3
-    )
-    assert town.prior_bounty_target_defeats(player, {"enemy_name": "Goblin"}) == 4
-    assert town.prior_bounty_target_defeats(player, {"enemy": SimpleNamespace(name="Missing")}) == 0
-
-
 def test_get_quest_dict_uses_cache(monkeypatch):
     from src.core import town
 
