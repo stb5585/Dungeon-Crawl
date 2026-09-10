@@ -631,10 +631,14 @@ class QuestManager:
         did_action: quest turned in or accepted.
         showed_message: any popup/help/no-quest message was shown.
         """
+        conversation_message = quest_progress.record_conversation(self.player_char, giver)
         quest_progress.sync_relic_story_progress(self.player_char)
         did_action = False
         showed_message = False
         quest_was_offered = False
+        if conversation_message:
+            self._show_hint(conversation_message.rstrip())
+            showed_message = True
         mains, sides = self._eligible_quests(giver)
 
         # Turn-in checks, then offers

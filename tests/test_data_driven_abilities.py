@@ -8593,6 +8593,7 @@ class TestBatch15Charge:
         assert isinstance(charge, DataDrivenChargingSkill)
         assert charge.name == "Charge"
         assert charge.cost == 10
+        assert charge.dmg_mod == 2.5
 
     def test_charge_starts_charging_phase(self):
         """With charge_time > 0, first use starts charging."""

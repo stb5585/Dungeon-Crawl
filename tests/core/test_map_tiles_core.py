@@ -650,6 +650,9 @@ class TestSpecialTiles:
         room.modify_player(game)
         assert player.state == "fight"
         assert room.enemy.name == "Shade"
+        actions = room.available_actions(player)
+        assert "Defend" in actions
+        assert "Flee" not in actions
         room.special_text(game)
         assert "Shade" in game.events
 

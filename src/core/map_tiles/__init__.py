@@ -156,6 +156,7 @@ from .rules import (
     nature_communion_text,
     ordinary_chest_mimic_chance,
     ordinary_chest_spawns_mimic,
+    assign_dungeon_chest_mimics,
     pop_cambion_messages,
     quest_biased_random_enemy,
     random,

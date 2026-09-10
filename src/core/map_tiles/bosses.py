@@ -20,7 +20,7 @@ class BossRoom(SpecialTile):
 
     def available_actions(self, player_char):
         if player_char.state == "fight":
-            action_list = ["Attack", "Use Item"]
+            action_list = ["Attack", "Defend", "Use Item"]
             if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
                     action_list.insert(1, "Cast Spell")

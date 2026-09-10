@@ -248,14 +248,17 @@ class PlayerProgressionMixin:
                         matches_item = quest_what.name == item.name
 
                     if matches_item:
-                        if item.name in self.special_inventory:
-                            if (
-                                len(self.special_inventory[item.name])
-                                >= self.quest_dict["Side"][quest]["Total"]
-                                and not self.quest_dict["Side"][quest]["Completed"]
-                            ):
-                                self.quest_dict["Side"][quest]["Completed"] = True
-                                quest_message += f"You have completed the quest {quest}.\n"
+                        quest_data = self.quest_dict["Side"][quest]
+                        if quest_data.get("Type") != "Collect":
+                            continue
+                        collected = int(quest_data.get("Collected", 0) or 0) + 1
+                        quest_data["Collected"] = min(int(quest_data.get("Total", 1) or 1), collected)
+                        if (
+                            collected >= quest_data["Total"]
+                            and not quest_data.get("Completed")
+                        ):
+                            quest_data["Completed"] = True
+                            quest_message += f"You have completed the quest {quest}.\n"
                         break
                 except (AttributeError, TypeError):
                     pass

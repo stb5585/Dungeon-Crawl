@@ -12,6 +12,9 @@ class ChestRoom(MapTile):
         self.open = False
         self.locked = False
         self.loot = None
+        # Assigned from the dungeon seed after all tiles are loaded.  ``None``
+        # distinguishes legacy/unassigned state from a chest known to be safe.
+        self.mimic_outcome: bool | None = None
         self.enter = False
         self.generate_loot()  # Generate loot when chest is created
 

@@ -227,6 +227,32 @@ def test_trap_type_and_triggered_state_round_trip_through_saves():
     assert restored.gathering_harvested is True
 
 
+def test_chest_mimic_outcome_round_trips_through_saves():
+    chest = map_tiles.UnlockedChestRoom(1, 2, 3)
+    chest.mimic_outcome = True
+    payload = TileStateSerializer.serialize_tile_state({(1, 2, 3): chest})
+    restored = map_tiles.UnlockedChestRoom(1, 2, 3)
+
+    TileStateSerializer.restore_tile_state({(1, 2, 3): restored}, payload)
+
+    assert restored.mimic_outcome is True
+
+
+def test_ordinary_chest_mimics_are_seed_assigned_and_exclude_funhouse_chests():
+    player = _player()
+    ordinary = map_tiles.UnlockedChestRoom(1, 2, 3)
+    locked = map_tiles.LockedChestRoom2(2, 2, 3)
+    funhouse = map_tiles.FunhouseMimicChest(3, 2, 7)
+    world = {(tile.x, tile.y, tile.z): tile for tile in (ordinary, locked, funhouse)}
+
+    count = map_tiles.assign_dungeon_chest_mimics(world, player, rng=_PlacementRng())
+
+    assert count == 2
+    assert ordinary.mimic_outcome is True
+    assert locked.mimic_outcome is True
+    assert funhouse.mimic_outcome is None
+
+
 def test_legacy_deathcap_state_restores_as_a_gathering_node():
     restored = map_tiles.EmptyCavePath(1, 2, 3)
     TileStateSerializer.restore_tile_state(

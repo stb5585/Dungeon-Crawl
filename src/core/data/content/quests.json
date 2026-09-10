@@ -651,5 +651,97 @@
         }
       }
     }
+  },
+  "Seraphine Voss": {
+    "Main": {},
+    "Side": {
+      "3": {
+        "A Candle for the Descent": {
+          "Who": "Seraphine Voss", "Type": "Talk", "What": "Barkeep", "Total": 1,
+          "Start Text": "The old Barkeep keeps practical notes on the first descent. Ask him which route the newest adventurers are surviving, then return to me before you press farther down.",
+          "End Text": "Good. A prepared mage lives longer than a brilliant but lost one. Keep your eyes open for the stairs and do not mistake the first floor for the whole dungeon.",
+          "Help Text": "Speak with the Barkeep at the Thirsty Dog, then return to Seraphine.",
+          "Reward": ["ManaPotion"], "Reward Number": 2, "Experience": 120,
+          "Completed": false, "Turned In": false
+        }
+      },
+      "7": {
+        "Spores in the Dark": {
+          "Who": "Seraphine Voss", "Type": "Collect", "What": "FungusSpore", "Total": 4,
+          "Start Text": "The first few dungeon levels conceal more than rats and rust. Bring me four Fungus Spores from the cave paths so I can finish a lantern reagent for explorers willing to seek deeper routes.",
+          "End Text": "These are fresh enough to hold their glow. Take this draught, and remember: when the first floor grows familiar, the stairs are an invitation rather than a wall.",
+          "Help Text": "Fungus Spores come from fungal growth and themed creature loot on the early dungeon floors.",
+          "Reward": ["ManaPotion"], "Reward Number": 3, "Experience": 220,
+          "Completed": false, "Turned In": false
+        }
+      },
+      "16": {
+        "The Spring's Reflection": {
+          "Who": "Seraphine Voss", "Type": "Locate", "What": "Underground Spring", "Total": 1,
+          "Target Position": [4, 9, 3],
+          "Start Text": "A reflection in my scrying glass points to an underground spring. Find the place itself and note how its water answers magic; I need proof, not another tavern rumor.",
+          "End Text": "So the spring is real. Your observation will spare several apprentices a dangerous guess.",
+          "Help Text": "Search the third dungeon floor for the Underground Spring.",
+          "Reward": ["GreatManaPotion"], "Reward Number": 2, "Experience": 850,
+          "Completed": false, "Turned In": false
+        }
+      },
+      "30": {
+        "The Unquiet Thesis": {
+          "Who": "Seraphine Voss", "Type": "Defeat", "What": "Lich", "Total": 1,
+          "Start Text": "A Lich has turned scholarship into an excuse for cruelty. End its research before its notes find their way into the wrong hands.",
+          "End Text": "Its work is ash, and its knowledge will remain buried. Take this elixir for the battles that still demand more from you.",
+          "Help Text": "Liches haunt the deeper dungeon levels and command dangerous arcane magic.",
+          "Reward": ["Elixir"], "Reward Number": 1, "Experience": 3500,
+          "Completed": false, "Turned In": false
+        }
+      }
+    }
+  },
+  "Mara Vale": {
+    "Main": {},
+    "Side": {
+      "10": {
+        "An Honest Introduction": {
+          "Who": "Mara Vale", "Type": "Talk", "What": "Griswold", "Total": 1,
+          "Start Text": "Griswold knows which shipments arrive damaged before they reach my ledger. Ask him about the missing crates, then bring me the answer; call it an introduction to honest work.",
+          "End Text": "You listened, remembered, and did not embellish. Those are rarer skills than a sharp knife.",
+          "Help Text": "Speak with Griswold at the Blacksmith, then return to Mara Vale.",
+          "Reward": ["Gold"], "Reward Number": 900, "Experience": 300,
+          "Completed": false, "Turned In": false
+        }
+      },
+      "14": {
+        "Loose Ends": {
+          "Who": "Mara Vale", "Type": "Defeat", "What": "Bandit", "Total": 6,
+          "Start Text": "A crew of Bandits has been taking coin from travelers who already paid their dues. Remove six of them and make it clear whose routes they have been abusing.",
+          "End Text": "The roads will be quieter, and my ledger will be cleaner. Both are profitable outcomes.",
+          "Help Text": "Bandits appear throughout the early and middle dungeon routes.",
+          "Reward": ["Gold"], "Reward Number": 1800, "Experience": 600,
+          "Completed": false, "Turned In": false
+        }
+      },
+      "22": {
+        "A Breath Between Stones": {
+          "Who": "Mara Vale", "Type": "Locate", "What": "Wind Communion", "Total": 1,
+          "Target Position": [5, 5, 3],
+          "Start Text": "One of my runners heard a wind where no wind should be. Find the draft on the third floor and learn whether it marks a route worth putting on a private map.",
+          "End Text": "A hidden route is worth more than a full purse when the purses run dry. You have earned a share.",
+          "Help Text": "Search the third dungeon floor for an unnatural draft among the cave paths.",
+          "Reward": ["Gold"], "Reward Number": 3500, "Experience": 1100,
+          "Completed": false, "Turned In": false
+        }
+      },
+      "35": {
+        "The Iron Ledger": {
+          "Who": "Mara Vale", "Type": "Collect", "What": "ScrapMetal", "Total": 10,
+          "Start Text": "The Guild's locks and tools do not replace themselves. Bring me ten pieces of Scrap Metal from the depths and I will see that you are paid for every useful ounce.",
+          "End Text": "This will keep our doors opening for the right people. Your payment is already counted.",
+          "Help Text": "Scrap Metal comes from constructs, broken equipment, and enemies that consume metal.",
+          "Reward": ["Gold"], "Reward Number": 7000, "Experience": 2200,
+          "Completed": false, "Turned In": false
+        }
+      }
+    }
   }
 }

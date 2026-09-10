@@ -373,7 +373,7 @@ def test_visit_magic_shop_handles_buy_sell_and_leave(monkeypatch):
     manager.visit_magic_shop()
 
     assert calls == ["buy", "sell"]
-    assert FakeShopScreen.instances[0].set_calls[0] == ["Buy", "Sell", "Leave"]
+    assert FakeShopScreen.instances[0].set_calls[0] == ["Buy", "Sell", "Quests", "Leave"]
     assert FakeShopScreen.instances[0].shop_message == shops.ShopManager.MAGIC_SHOP_MESSAGE
     assert FakeShopScreen.instances[0].location_portrait_name == "Seraphine Voss"
 

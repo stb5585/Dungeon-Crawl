@@ -209,9 +209,14 @@ class DungeonInteractionMixin:
         locked = int("Locked" in tile_type)
         plus = int("ChestRoom2" in tile_type)
         is_funhouse_mimic = "FunhouseMimicChest" in tile_type
-        if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(
-            self.player_char, locked=locked, plus=plus
-        ):
+        mimic_outcome = getattr(chest_tile, "mimic_outcome", None)
+        if not is_funhouse_mimic and mimic_outcome is None:
+            # Compatibility for hand-built tiles and pre-persistence saves.
+            mimic_outcome = map_tiles.ordinary_chest_spawns_mimic(
+                self.player_char, locked=locked, plus=plus
+            )
+            chest_tile.mimic_outcome = mimic_outcome
+        if is_funhouse_mimic or mimic_outcome:
             from src.core import enemies
 
             # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling

@@ -29,6 +29,42 @@ def ensure_quest_categories(player) -> dict[str, dict]:
     return quest_dict
 
 
+def _complete_matching_side_quests(player, quest_type: str, predicate) -> str:
+    """Complete active side quests of ``quest_type`` accepted by ``player``."""
+    completed: list[str] = []
+    for quest_name, quest_data in ensure_quest_categories(player)["Side"].items():
+        if (
+            isinstance(quest_data, dict)
+            and quest_data.get("Type") == quest_type
+            and not quest_data.get("Completed")
+            and not quest_data.get("Turned In")
+            and predicate(quest_data)
+        ):
+            quest_data["Completed"] = True
+            completed.append(quest_name)
+    return "".join(f"You have completed the quest {name}.\n" for name in completed)
+
+
+def record_location(player, position: tuple[int, int, int]) -> str:
+    """Record arrival at a location for active data-driven locate quests."""
+    normalized_position = tuple(position)
+
+    def matches(quest_data: dict[str, Any]) -> bool:
+        target = quest_data.get("Target Position")
+        return isinstance(target, (list, tuple)) and tuple(target) == normalized_position
+
+    return _complete_matching_side_quests(player, "Locate", matches)
+
+
+def record_conversation(player, npc_name: str) -> str:
+    """Record a conversation for active data-driven town dialogue quests."""
+    return _complete_matching_side_quests(
+        player,
+        "Talk",
+        lambda quest_data: quest_data.get("What") == npc_name,
+    )
+
+
 def relic_count(player) -> int:
     """Return how many of the six major relics the player currently carries."""
     inventory = getattr(player, "special_inventory", {}) or {}

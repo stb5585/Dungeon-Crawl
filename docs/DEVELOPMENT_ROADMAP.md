@@ -160,22 +160,33 @@ The slice also standardizes stat-debuff wording and lets non-player actors use
 item-gated abilities without carrying or consuming player inventory. Player
 item requirements remain unchanged. Focused regressions cover action
 availability, anti-magic feedback, debuff text, and enemy/familiar ability use.
-
-## Improvements Found on Playtesting
-
-- Empty shortcut buttons are inert and cannot commit a turn.
-- Specials and Action Layout are combined into an icon-based Abilities workspace,
+Empty shortcut buttons are inert and cannot commit a turn.
+Specials and Action Layout are combined into an icon-based Abilities workspace,
   split into learned Skills and Spells with drag-and-drop shortcut assignment.
-- Victory rewards and level-up mutations are deferred until the enemy fade finishes;
+Victory rewards and level-up mutations are deferred until the enemy fade finishes;
   the pre-reward combat frame remains behind the outcome popup.
-- Defeated timeline badges remain until their sprites finish fading.
-- The current actor is integrated into the timeline ribbon, with blue player-side
+Defeated timeline badges remain until their sprites finish fading.
+The current actor is integrated into the timeline ribbon, with blue player-side
   and red enemy-side token outlines.
-- Turned-in collection quests retain their completed collection count instead of
+Turned-in collection quests retain their completed collection count instead of
   reverting to zero progress.
-- Dungeon entry and death clear cached dungeon frames before the next view is
+Dungeon entry and death clear cached dungeon frames before the next view is
   rendered.
-- The item-icon map covers every catalog item, including Monocane and crossbow
+The item-icon map covers every catalog item, including Monocane and crossbow
   equipment and ammunition.
-- Keyboard menu navigation skips shortcut tiles; shortcuts remain available by
+Keyboard menu navigation skips shortcut tiles; shortcuts remain available by
   number key, mouse click, or touch.
+Specialist gathering now adds persistent visible resource nodes without
+replacing themed enemy drops: Druid/Archdruid harvest botanical reagents and
+Assassin harvests Deathcap Mushroom; other classes receive generic discovery
+feedback only.
+
+## Shipped — Early Progression, Quest, And Combat Improvements
+
+Ordinary chest Mimic outcomes are now generated from the persisted dungeon seed,
+so reloading cannot turn a planned Mimic into a normal chest. Seraphine Voss and
+Mara Vale each offer four level-spread side quests, including reusable dungeon
+landmark and town-conversation objectives; the early Magic Shop quests provide
+route guidance without constraining exploration. Boss fights include Defend,
+and Charge now pays off its one-round setup with 2.5× weapon damage while
+retaining its contested one-turn stun.

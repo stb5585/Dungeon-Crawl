@@ -19,11 +19,11 @@ name: Charge
 type: ChargingSkill
 subtype: Offensive
 description: >-
-  Charge the enemy, building momentum before stunning them and dealing
-  weapon damage.
+  Charge the enemy, building momentum before stunning them and delivering
+  a devastating weapon strike.
 cost: 10
 weapon: true
-damage_mod: 1.25
+damage_mod: 2.5
 
 # Charging mechanics
 charge_time: 1
@@ -31,7 +31,7 @@ telegraph_message: "lowering their head and building momentum for a devastating 
 
 effects:
   - type: charge_execute
-    dmg_mod: 1.25
+    dmg_mod: 2.5
     stun_duration: 1
 
 # Priority and targeting

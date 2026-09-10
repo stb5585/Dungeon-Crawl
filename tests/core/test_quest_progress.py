@@ -76,3 +76,25 @@ def test_all_relics_complete_holy_relics_without_removing_staged_metadata():
     assert holy["Stage"] == "collecting"
     assert "All six relics" in holy["Help Text"]
     assert quest_progress.HOLY_RELICS in message
+
+
+def test_location_and_conversation_objectives_complete_only_matching_active_quests():
+    player = _player()
+    player.quest_dict["Side"] = {
+        "Find the Spring": {
+            "Type": "Locate", "Target Position": [4, 9, 3], "Completed": False,
+            "Turned In": False,
+        },
+        "Speak to Griswold": {
+            "Type": "Talk", "What": "Griswold", "Completed": False, "Turned In": False,
+        },
+        "Already Done": {
+            "Type": "Talk", "What": "Griswold", "Completed": True, "Turned In": False,
+        },
+    }
+
+    assert quest_progress.record_location(player, (1, 1, 1)) == ""
+    assert quest_progress.record_location(player, (4, 9, 3)) == "You have completed the quest Find the Spring.\n"
+    assert quest_progress.record_conversation(player, "Barkeep") == ""
+    assert quest_progress.record_conversation(player, "Griswold") == "You have completed the quest Speak to Griswold.\n"
+    assert player.quest_dict["Side"]["Already Done"]["Completed"] is True

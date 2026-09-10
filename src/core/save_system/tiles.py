@@ -27,6 +27,7 @@ class TileStateSerializer:
             "gathering_resource",
             "gathering_available",
             "gathering_harvested",
+            "mimic_outcome",
         }
     )
 
@@ -71,6 +72,8 @@ class TileStateSerializer:
                 state["gathering_resource"] = tile.gathering_resource
                 state["gathering_available"] = tile.gathering_available
                 state["gathering_harvested"] = tile.gathering_harvested
+            if hasattr(tile, "mimic_outcome"):
+                state["mimic_outcome"] = tile.mimic_outcome
 
             if hasattr(tile, "active"):
                 state["active"] = tile.active
@@ -145,6 +148,10 @@ class TileStateSerializer:
                 tile.gathering_resource = "deathcap_mushroom"
                 tile.gathering_available = bool(state.get("deathcap_available", False))
                 tile.gathering_harvested = bool(state.get("deathcap_gathered", False))
+            if "mimic_outcome" in state and hasattr(tile, "mimic_outcome"):
+                outcome = state["mimic_outcome"]
+                if isinstance(outcome, bool):
+                    tile.mimic_outcome = outcome
 
             # Restore defeated flag
             if "defeated" in state and hasattr(tile, "defeated"):

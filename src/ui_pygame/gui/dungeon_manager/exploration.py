@@ -5,7 +5,7 @@ import traceback
 
 import pygame
 
-from src.core import map_tiles
+from src.core import map_tiles, quest_progress
 from src.core.abilities import detects_encounter
 from src.core.player import DIRECTIONS
 
@@ -180,6 +180,13 @@ class DungeonExplorationMixin:
         current_tile = self.get_current_tile()
         if not current_tile:
             return
+
+        location_message = quest_progress.record_location(
+            self.player_char,
+            (self.player_char.location_x, self.player_char.location_y, self.player_char.location_z),
+        )
+        if location_message:
+            self.add_message(location_message.rstrip())
 
         # Golden Chalice quest progression hooks
         try:
