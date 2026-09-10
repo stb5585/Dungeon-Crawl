@@ -182,9 +182,7 @@ def test_gravitational_pull_slows_grounded_and_pins_flying_targets(monkeypatch):
     monkeypatch.setattr(
         player,
         "resolve_contact",
-        lambda *_args, **_kwargs: ContactResult(
-            hit=True, chance=1.0, roll=None, always_hit=True
-        ),
+        lambda *_args, **_kwargs: ContactResult(hit=True, chance=1.0, roll=None, always_hit=True),
     )
 
     grounded_result = spell.cast(player, grounded)
