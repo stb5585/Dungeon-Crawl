@@ -56,6 +56,7 @@ class CombatManagerCoreMixin:
         self.dungeon_renderer = None
         self.player_world_dict = None
         self._combat_background = None
+        self._last_combat_timeline = ()
         self.available_actions = []
         self._slot_symbol_cache = None
 

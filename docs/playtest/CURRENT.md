@@ -81,12 +81,16 @@ The comprehensive readiness pass is complete when:
 
 ## Current Focus — Combat Presentation
 
-- Reconfigure shortcuts only through Character Menu → Action Layout, then
-  verify keys 1–6, mouse, and controller activation in combat.
+- Reconfigure shortcuts by dragging Skill and Spell icons in Character Menu →
+  Abilities, then verify keys 1–6, mouse, and controller activation in combat.
+- Clear a shortcut and confirm selecting its empty combat slot does not advance
+  the turn.
 - Confirm the ability bar preserves unavailable-action reasons and All Actions
   remains a read-only catalog.
-- Confirm the token timeline highlights the active actor without showing
-  readiness values or obscuring the active-turn badge.
+- Confirm the combined actor/timeline ribbon shows a larger current actor,
+  blue player-side and red enemy-side outlines, and no readiness values.
+- Win a fight and confirm defeated timeline badges remain through the enemy
+  fade, with level and HP/MP changes appearing only after the fade completes.
 - Enter an anti-magic encounter and verify the persistent field badge and its
   one-time combat-entry explanation before selecting an ability.
 - Exercise Sleeping Powder or Smoke Screen on an enemy and a familiar without

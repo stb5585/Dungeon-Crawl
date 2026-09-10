@@ -2772,12 +2772,100 @@ def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch
         "Quests",
         "Key Items",
         "Bestiary",
-        "Specials",
-        "Action Layout",
+        "Abilities",
         "Exit Menu",
     ]
     assert "Change Equipment" not in screen.menu_options
     assert "Quit Game" not in screen.menu_options
+
+
+def test_abilities_workspace_splits_icons_and_accepts_drag_to_shortcut(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.action_bar_autofill_complete = True
+    player.action_bar_assignments = (None,) * 6
+    player.spellbook = {
+        "Skills": {
+            "Cleave": SimpleNamespace(
+                ability_id="warrior.cleave",
+                passive=False,
+                exploration_cast=False,
+                resource_type="",
+                cost=0,
+                description="Sweep the front rank.",
+                is_available=lambda _player, _target=None: True,
+            )
+        },
+        "Spells": {
+            "Spark": SimpleNamespace(
+                ability_id="mage.spark",
+                passive=False,
+                exploration_cast=False,
+                resource_type="",
+                cost=2,
+                description="A small arc of lightning.",
+                is_available=lambda _player, _target=None: True,
+            )
+        },
+    }
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.equipment.get_ability_icon_manager",
+        lambda: SimpleNamespace(get_icon=lambda _key: pygame.Surface((32, 32))),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None
+    )
+
+    panel = screen.content_rect.inflate(-48, -48)
+    catalog_rect = pygame.Rect(
+        panel.left + 18,
+        panel.top + 80,
+        panel.width - 36,
+        panel.height - 220,
+    )
+    skill_card_center = (
+        catalog_rect.left + (catalog_rect.width - 14) // 4,
+        catalog_rect.top + 32 + 22,
+    )
+    slot_width = max(72, (panel.width - 48) // 6)
+    slot_center = (
+        panel.left + 18 + slot_width // 2,
+        panel.bottom - 116 + 44,
+    )
+    event_batches = iter(
+        [
+            [
+                pygame.event.Event(
+                    pygame.MOUSEBUTTONDOWN,
+                    button=1,
+                    pos=skill_card_center,
+                ),
+                pygame.event.Event(
+                    pygame.MOUSEBUTTONUP,
+                    button=1,
+                    pos=slot_center,
+                ),
+                pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE),
+            ]
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
+
+    screen._edit_action_layout(player)
+
+    assert player.action_bar_assignments[0].action_id == "warrior.cleave"
+    assert {"Skills", "Spells"}.issubset(_rendered_text(presenter))
 
 
 def test_modern_character_aerial_tempo_tab_toggles_jump_mods_inline(monkeypatch):

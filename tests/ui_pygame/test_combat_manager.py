@@ -1231,6 +1231,44 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     ]
 
 
+def test_execute_empty_shortcut_does_not_call_engine_or_spend_turn(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    engine_calls = []
+    manager.engine = SimpleNamespace(
+        attacker=player,
+        execute_action=lambda *args, **kwargs: engine_calls.append((args, kwargs)),
+    )
+
+    assert manager._execute_action("1. Empty", player, enemy) is None
+    assert engine_calls == []
+    assert manager.combat_view.messages == []
+
+
+def test_timeline_keeps_defeated_badges_only_while_death_fade_runs(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    fading = True
+    manager.combat_view.death_animation_in_progress = lambda: fading
+    player_entry = SimpleNamespace(actor_id="player")
+    enemy_entry = SimpleNamespace(actor_id="enemy-a")
+    manager._last_combat_timeline = (player_entry, enemy_entry, player_entry, enemy_entry)
+
+    during_fade = manager._timeline_entries_for_frame((player_entry, player_entry))
+
+    assert [entry.actor_id for entry in during_fade] == [
+        "player",
+        "enemy-a",
+        "player",
+        "enemy-a",
+    ]
+
+    fading = False
+    after_fade = manager._timeline_entries_for_frame((player_entry, player_entry))
+
+    assert after_fade == (player_entry, player_entry)
+
+
 def test_execute_action_tame_skips_damage_animation_and_defers_nickname(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()
@@ -1504,7 +1542,7 @@ def test_tamed_combat_end_skips_death_fade_then_names_companion(monkeypatch):
     assert "name-screen:Giant Hornet:Hornet:Stingwing:Wingbeat" in popup_messages
     assert popup_messages.index("shown") < popup_messages.index("name-screen-shown")
     assert player.familiar.name == "Needle (Giant Hornet)"
-    assert len(render_calls) == 2
+    assert len(render_calls) == 1
     assert manager.combat_view.reset_calls == 1
 
 
@@ -1528,23 +1566,35 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     render_calls = []
+    event_order = []
     monkeypatch.setattr(
-        manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs))
+        manager,
+        "_render_combat_frame",
+        lambda *args, **kwargs: (
+            render_calls.append((args, kwargs)),
+            event_order.append("render"),
+        ),
     )
     pauses = []
     monkeypatch.setattr(manager, "_pause_with_events", lambda ms: pauses.append(ms))
     popup_messages = []
 
     manager.current_tile = JesterBossRoom()
+
+    def end_battle():
+        event_order.append("bookkeeping")
+        return SimpleNamespace(result="victory", message="Gold +5", level_up=False)
+
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: SimpleNamespace(result="victory", message="Gold +5", level_up=False),
+        end_battle=end_battle,
     )
 
     assert manager._handle_combat_end(player, enemy, fled=False) is True
     assert popup_messages[0].startswith("Victory! Jester defeated!")
     assert "Gold +5" in popup_messages[0]
-    assert len(render_calls) == DEATH_ANIMATION_FRAMES + 1
+    assert len(render_calls) == DEATH_ANIMATION_FRAMES
+    assert event_order == ["render"] * DEATH_ANIMATION_FRAMES + ["bookkeeping"]
     assert pauses == [POST_DEATH_PAUSE_MS]
     assert manager.combat_view.reset_calls == 1
     assert manager._combat_background is None
