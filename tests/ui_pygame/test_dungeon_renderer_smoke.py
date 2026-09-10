@@ -769,6 +769,28 @@ def test_rookie_body_sprite_respects_player_quest_gate():
     pygame.quit()
 
 
+def test_deathcap_gathering_tile_uses_fungus_floor_overlay():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    tile = OpenTile()
+    tile.deathcap_available = True
+    tile.deathcap_gathered = False
+    rect = pygame.Rect(120, 120, 120, 120)
+    calls = []
+    scene_renderer._render_floor_sprite = lambda *args, **kwargs: calls.append((args, kwargs))
+
+    scene_renderer._render_special_tile(tile, rect, darkness=0.0, depth=1)
+    assert calls[-1][0][0] == "fungus_patch"
+
+    tile.deathcap_gathered = True
+    scene_renderer._render_special_tile(tile, rect, darkness=0.0, depth=1)
+    assert len(calls) == 1
+
+    pygame.quit()
+
+
 def test_blood_overlay_keys_and_render_hooks():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))

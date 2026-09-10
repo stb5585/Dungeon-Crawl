@@ -222,6 +222,17 @@ class DeadBody(DummyTile):
         return ""
 
 
+class DeathcapGatheringTile(DummyTile):
+    def __init__(self):
+        super().__init__()
+        self.deathcap_available = True
+        self.deathcap_gathered = False
+
+    def modify_player(self, game, **_kwargs):
+        game.player_char.modify_inventory(items.DeathcapMushroom())
+        self.deathcap_gathered = True
+
+
 def _make_presenter():
     return SimpleNamespace(
         screen=RecordingScreen(),
@@ -386,6 +397,28 @@ def test_resolve_enemy_messages_and_random_cry(monkeypatch):
     monkeypatch.setattr(dungeon_manager.random, "choice", lambda seq: seq[0])
     manager._check_random_cry()
     assert any("sobs echo" in message for message in manager.messages)
+
+
+def test_deathcap_gather_uses_loot_popup_and_refreshes_dungeon_view(monkeypatch):
+    manager, _presenter, player, game = _make_manager(monkeypatch)
+    game.player_char = player
+    tile = DeathcapGatheringTile()
+    player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
+    loot_calls = []
+    manager.loot_popup = SimpleNamespace(
+        show_loot=lambda item, label, **kwargs: loot_calls.append((item.name, label, kwargs))
+    )
+    manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
+
+    manager._check_tile_effects()
+
+    assert tile.deathcap_gathered is True
+    assert player.inventory_calls == [("Deathcap Mushroom", {})]
+    assert loot_calls[0][:2] == ("Deathcap Mushroom", "Foraged Resource")
+    assert loot_calls[0][2]["flush_events"] is True
+    assert loot_calls[0][2]["require_key_release"] is True
+    assert "refresh" in manager.messages
+    assert "Gathered Deathcap Mushroom." in manager.messages
 
 
 def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_teleporter(

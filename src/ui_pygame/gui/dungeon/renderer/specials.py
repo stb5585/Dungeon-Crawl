@@ -467,6 +467,20 @@ class RendererSpecialTileMixin:
         if depth <= 0 and "WarpPoint" not in tile_type:
             return
 
+        if getattr(tile, "deathcap_available", False) and not getattr(
+            tile, "deathcap_gathered", False
+        ):
+            self._render_floor_sprite(
+                "fungus_patch",
+                rect,
+                darkness=darkness,
+                depth=depth,
+                kind="decorative_prop",
+                side=side,
+                lateral_view=lateral_view,
+            )
+            return
+
         decorative_sprite_key = self._get_decorative_floor_sprite_key(tile_type)
         if decorative_sprite_key is not None:
             self._render_floor_sprite(
@@ -1088,6 +1102,10 @@ class RendererSpecialTileMixin:
     def _is_floor_sprite_tile(tile, player_char=None) -> bool:
         if tile is None:
             return False
+        if getattr(tile, "deathcap_available", False) and not getattr(
+            tile, "deathcap_gathered", False
+        ):
+            return True
         if bool(getattr(tile, "rookie_body_marker", False)) or bool(
             getattr(tile, "dropped_rookie_body", False)
         ):
