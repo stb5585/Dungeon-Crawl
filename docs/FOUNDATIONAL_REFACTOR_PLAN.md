@@ -288,6 +288,12 @@ structural work.
   catalog with an icon-based, drag-and-drop shortcut editor; All Actions is a
   read-only combat catalog. Mouse and controller navigation provide equivalent
   selection, target, detail, and cancellation operations.
+- Ordinary cave paths can contain persistent gathering nodes. Every character
+  sees the node overlay, but Druid/Archdruid identify and harvest Acorn, Vine
+  Seed, Fungus Spore, and Hemlock Root, while Assassin identifies and harvests
+  Deathcap Mushroom. Harvesting is an explicit interaction; unqualified
+  characters receive generic unfamiliar-growth feedback. Node state persists
+  per save, including legacy Deathcap-node conversion.
 - Shortcut references contain an ability slug or existing item serializer
   token. Missing items leave a disabled assignment. Empty slots auto-fill from
   learned active abilities in acquisition order without overwriting a player

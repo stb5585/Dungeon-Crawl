@@ -159,6 +159,10 @@ class PlayerExplorationMixin:
             world_dict,
             rng=random.Random(int(getattr(self, "dungeon_trap_seed", 0) or 0)),
         )
+        map_tiles.assign_dungeon_gathering_nodes(
+            world_dict,
+            rng=random.Random(int(getattr(self, "dungeon_trap_seed", 0) or 0) ^ 0x6A7E1),
+        )
 
         wind_pos = getattr(map_tiles, "WIND_COMMUNION_POS", None)
         if wind_pos and wind_pos in world_dict:

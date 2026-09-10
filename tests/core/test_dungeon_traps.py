@@ -25,6 +25,18 @@ class _TripwireRng:
         return 1.0
 
 
+class _GatheringRng:
+    def __init__(self):
+        self.choice_calls = []
+
+    def random(self):
+        return 0.0
+
+    def choices(self, population, **kwargs):
+        self.choice_calls.append((tuple(population), tuple(kwargs["weights"])))
+        return [population[0]]
+
+
 def _player(class_name="Warrior"):
     player = TestGameState.create_player(class_name=class_name, level=30)
     player.quest_dict = {"Main": {}, "Side": {}, "Bounty": {}}
@@ -52,6 +64,57 @@ def test_traps_are_only_assigned_to_exact_ordinary_path_types():
     assert count == 4
     assert all(tile.trap_type == "Tripwire" for tile in ordinary)
     assert all(not hasattr(tile, "trap_type") or tile.trap_type is None for tile in excluded)
+
+
+def test_gathering_nodes_are_depth_weighted_and_exclude_non_path_tiles():
+    early = map_tiles.EmptyCavePath(0, 0, 1)
+    middle = map_tiles.CavePath0(1, 0, 3)
+    deep = map_tiles.CavePath1(2, 0, 5)
+    excluded = map_tiles.RubbleTile(3, 0, 3)
+    world = {(tile.x, tile.y, tile.z): tile for tile in (early, middle, deep, excluded)}
+    rng = _GatheringRng()
+
+    count = map_tiles.assign_dungeon_gathering_nodes(world, rng=rng)
+
+    assert count == 3
+    assert [tile.gathering_resource for tile in (early, middle, deep)] == [
+        "acorn",
+        "vine_seed",
+        "fungus_spore",
+    ]
+    assert rng.choice_calls == [
+        (("acorn", "vine_seed", "fungus_spore"), (40, 35, 25)),
+        (("vine_seed", "fungus_spore", "hemlock_root", "deathcap_mushroom"), (20, 30, 35, 15)),
+        (("fungus_spore", "hemlock_root", "deathcap_mushroom"), (20, 35, 45)),
+    ]
+    assert excluded.gathering_available is False
+    assert map_tiles.GATHERING_NODE_CHANCE == 0.03
+
+
+def test_gathering_knowledge_and_harvest_follow_specialist_rules():
+    druid = _player("Druid")
+    assassin = _player("Assassin")
+    warrior = _player("Warrior")
+    nature_tile = map_tiles.EmptyCavePath(1, 2, 1)
+    nature_tile.gathering_resource = "acorn"
+    nature_tile.gathering_available = True
+    deathcap_tile = map_tiles.EmptyCavePath(2, 2, 4)
+    deathcap_tile.gathering_resource = "deathcap_mushroom"
+    deathcap_tile.gathering_available = True
+
+    assert map_tiles.can_identify_gathering_node(druid, nature_tile)
+    assert not map_tiles.can_identify_gathering_node(assassin, nature_tile)
+    assert map_tiles.can_identify_gathering_node(assassin, deathcap_tile)
+    assert not map_tiles.can_identify_gathering_node(warrior, deathcap_tile)
+    assert "Acorn" in map_tiles.gathering_hint(druid, nature_tile, current_tile=True)
+    assert "unfamiliar growth" in map_tiles.gathering_hint(warrior, nature_tile, current_tile=False)
+
+    item = map_tiles.harvest_gathering_node(druid, nature_tile)
+    assert item.name == "Acorn"
+    assert nature_tile.gathering_harvested is True
+    assert nature_tile.gathering_available is False
+    assert map_tiles.harvest_gathering_node(warrior, deathcap_tile) is None
+    assert deathcap_tile.gathering_available is True
 
 
 def test_tripwire_scales_with_depth_uses_defense_and_only_triggers_once():
@@ -149,8 +212,9 @@ def test_trap_type_and_triggered_state_round_trip_through_saves():
     tile = map_tiles.EmptyCavePath(1, 2, 3)
     tile.trap_type = "Magic Ward"
     tile.trap_triggered = True
-    tile.deathcap_available = True
-    tile.deathcap_gathered = True
+    tile.gathering_resource = "hemlock_root"
+    tile.gathering_available = False
+    tile.gathering_harvested = True
     payload = TileStateSerializer.serialize_tile_state({(1, 2, 3): tile})
     restored = map_tiles.EmptyCavePath(1, 2, 3)
 
@@ -158,5 +222,18 @@ def test_trap_type_and_triggered_state_round_trip_through_saves():
 
     assert restored.trap_type == "Magic Ward"
     assert restored.trap_triggered is True
-    assert restored.deathcap_available is True
-    assert restored.deathcap_gathered is True
+    assert restored.gathering_resource == "hemlock_root"
+    assert restored.gathering_available is False
+    assert restored.gathering_harvested is True
+
+
+def test_legacy_deathcap_state_restores_as_a_gathering_node():
+    restored = map_tiles.EmptyCavePath(1, 2, 3)
+    TileStateSerializer.restore_tile_state(
+        {(1, 2, 3): restored},
+        {"(1, 2, 3)": {"deathcap_available": True, "deathcap_gathered": False}},
+    )
+
+    assert restored.gathering_resource == "deathcap_mushroom"
+    assert restored.gathering_available is True
+    assert restored.gathering_harvested is False

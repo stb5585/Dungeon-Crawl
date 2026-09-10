@@ -225,12 +225,9 @@ class DeadBody(DummyTile):
 class DeathcapGatheringTile(DummyTile):
     def __init__(self):
         super().__init__()
-        self.deathcap_available = True
-        self.deathcap_gathered = False
-
-    def modify_player(self, game, **_kwargs):
-        game.player_char.modify_inventory(items.DeathcapMushroom())
-        self.deathcap_gathered = True
+        self.gathering_resource = "deathcap_mushroom"
+        self.gathering_available = True
+        self.gathering_harvested = False
 
 
 def _make_presenter():
@@ -399,9 +396,8 @@ def test_resolve_enemy_messages_and_random_cry(monkeypatch):
     assert any("sobs echo" in message for message in manager.messages)
 
 
-def test_deathcap_gather_uses_loot_popup_and_refreshes_dungeon_view(monkeypatch):
-    manager, _presenter, player, game = _make_manager(monkeypatch)
-    game.player_char = player
+def test_deathcap_harvest_requires_specialist_interaction_and_uses_loot_popup(monkeypatch):
+    manager, _presenter, player, _game = _make_manager(monkeypatch)
     tile = DeathcapGatheringTile()
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
     loot_calls = []
@@ -411,8 +407,16 @@ def test_deathcap_gather_uses_loot_popup_and_refreshes_dungeon_view(monkeypatch)
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
 
     manager._check_tile_effects()
+    assert tile.gathering_harvested is False
 
-    assert tile.deathcap_gathered is True
+    manager.interact()
+    assert any("lack the knowledge" in message for message in manager.messages)
+    assert not loot_calls
+
+    player.cls.name = "Assassin"
+    manager.interact()
+
+    assert tile.gathering_harvested is True
     assert player.inventory_calls == [("Deathcap Mushroom", {})]
     assert loot_calls[0][:2] == ("Deathcap Mushroom", "Foraged Resource")
     assert loot_calls[0][2]["flush_events"] is True

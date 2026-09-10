@@ -63,6 +63,10 @@ or a proposed, separately approved tuning slice.
   report-back and creation of `The Holy Relics`.
 - Verify normal death, special-route defeat, town return, and postgame town
   dialogue.
+- On floors 1–6, verify visible gathering-node overlays. Druid/Archdruid should
+  identify and explicitly harvest Acorn, Vine Seed, Fungus Spore, and Hemlock
+  Root; Assassin should identify and explicitly harvest Deathcap Mushroom.
+  Other classes should see unfamiliar growth but receive no harvest action.
 - Verify the Vesperion/Voluntas route, Liminal trials, Reflection, true-final
   completion, and ending continuity.
 
@@ -98,6 +102,9 @@ The comprehensive readiness pass is complete when:
   is freshly rendered rather than a stale dungeon view.
 - Inspect Monocane and crossbows, bolts, venoms, and other catalog items to
   confirm each has an item icon.
+- Save and reload before and after gathering a resource node. Confirm the node
+  remains available before harvest and absent afterward, while existing enemy
+  reagent drops and toxin/Plant Seeds use remain unchanged.
 - Enter an anti-magic encounter and verify the persistent field badge and its
   one-time combat-entry explanation before selecting an ability.
 - Exercise Sleeping Powder or Smoke Screen on an enemy and a familiar without

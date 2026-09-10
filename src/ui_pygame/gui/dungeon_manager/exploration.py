@@ -5,7 +5,7 @@ import traceback
 
 import pygame
 
-from src.core import items, map_tiles
+from src.core import map_tiles
 from src.core.abilities import detects_encounter
 from src.core.player import DIRECTIONS
 
@@ -85,6 +85,13 @@ class DungeonExplorationMixin:
                 enemy = self._resolve_tile_enemy(current_tile)
                 if enemy:
                     messages.append(f"A {enemy.name} blocks your path!")
+            gathering_message = map_tiles.gathering_hint(
+                self.player_char,
+                current_tile,
+                current_tile=True,
+            )
+            if gathering_message:
+                messages.append(gathering_message)
 
         # Check tile ahead (for interactive objects like chests, doors, relics)
         direction = self.player_char.facing
@@ -158,6 +165,13 @@ class DungeonExplorationMixin:
                         messages.append(
                             "A golden chalice rests on a pedestal ahead! (Press O to take)"
                         )
+            gathering_message = map_tiles.gathering_hint(
+                self.player_char,
+                ahead_tile,
+                current_tile=False,
+            )
+            if gathering_message:
+                messages.append(gathering_message)
 
         return messages if messages else None
 
@@ -221,10 +235,6 @@ class DungeonExplorationMixin:
         # Apply tile-defined effects (original game behavior)
         # This enables effects like FirePath damage on entry.
         hp_before = getattr(self.player_char.health, "current", None)
-        deathcap_was_available = bool(
-            getattr(current_tile, "deathcap_available", False)
-            and not getattr(current_tile, "deathcap_gathered", False)
-        )
         try:
             if "UndergroundSpring" not in tile_type:
                 from ..confirmation_popup import ConfirmationPopup
@@ -238,8 +248,6 @@ class DungeonExplorationMixin:
         except Exception:
             pass
         else:
-            if deathcap_was_available and getattr(current_tile, "deathcap_gathered", False):
-                self._show_deathcap_gathering_popup()
             hp_after = getattr(self.player_char.health, "current", None)
             if (
                 "FirePath" in tile_type
@@ -366,20 +374,6 @@ class DungeonExplorationMixin:
                 "*** WARNING: Enemies beyond this point increase in difficulty. Plan accordingly. ***"
             )
             current_tile._warning_shown = True
-
-    def _show_deathcap_gathering_popup(self) -> None:
-        """Confirm a visible Deathcap gathering discovery with the loot presentation."""
-        mushroom = items.DeathcapMushroom()
-        self._mark_view_dirty()
-        self._refresh_cached_frame()
-        self.loot_popup.show_loot(
-            mushroom,
-            "Foraged Resource",
-            background_draw_func=self._draw_cached_popup_background,
-            flush_events=True,
-            require_key_release=True,
-        )
-        self.add_message(f"Gathered {mushroom.name}.")
 
     def explore_dungeon(self):
         """
