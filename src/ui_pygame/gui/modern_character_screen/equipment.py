@@ -10,6 +10,7 @@ from src.core.combat.action_interface import (
     learned_action_presentations,
     shortcut_presentations,
 )
+from src.ui_pygame.assets.ability_icon_manager import get_ability_icon_manager
 
 from ..confirmation_popup import ConfirmationPopup
 from ..input_guards import (
@@ -292,12 +293,7 @@ class CharacterEquipmentMixin:
         elif chosen == "Bestiary":
             popup = BestiaryPopupMenu(self.presenter, self)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
-        elif chosen == "Specials":
-            popup = SimpleListPopupMenu(
-                self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list
-            )
-            _ = popup.show(player_char, flush_events=True, require_key_release=True)
-        elif chosen == "Action Layout":
+        elif chosen in {"Abilities", "Action Layout", "Specials"}:
             self._edit_action_layout(player_char)
         elif chosen == "Totem Aspects":
             popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
@@ -312,8 +308,7 @@ class CharacterEquipmentMixin:
             "Quests",
             "Key Items",
             "Bestiary",
-            "Specials",
-            "Action Layout",
+            "Abilities",
             "Exit Menu",
         ]
 
@@ -328,7 +323,9 @@ class CharacterEquipmentMixin:
             return
         selected_action = 0
         selected_slot = 0
-        action_offset = 0
+        category_offsets = {"Skill": 0, "Spell": 0}
+        dragged_action = None
+        dragged_position = None
         input_armed = prepare_guarded_input(flush_events=True, require_key_release=True)
         while True:
             self.draw_all(player_char, do_flip=False)
@@ -341,65 +338,164 @@ class CharacterEquipmentMixin:
             self.draw_semi_transparent_panel(panel, alpha=235)
             pygame.draw.rect(self.screen, self.colors.GOLD, panel, 2)
             self._draw_text(
-                "Action Layout", self.large_font, self.colors.GOLD, panel.left + 18, panel.top + 14
+                "Learned Abilities",
+                self.large_font,
+                self.colors.GOLD,
+                panel.left + 18,
+                panel.top + 14,
             )
             self._draw_text(
-                "Up/Down select action · Left/Right select slot · Enter assign · Backspace clear · Esc close",
+                "Drag an icon to a shortcut slot · Enter assign · Backspace clear · Esc close",
                 self.small_font,
                 self.colors.LIGHT_GRAY,
                 panel.left + 18,
                 panel.top + 48,
                 panel.width - 36,
             )
-            action_rect = pygame.Rect(
-                panel.left + 18, panel.top + 82, panel.width * 3 // 5, panel.height - 100
+            catalog_rect = pygame.Rect(
+                panel.left + 18,
+                panel.top + 80,
+                panel.width - 36,
+                panel.height - 220,
             )
-            slot_rect = pygame.Rect(
-                action_rect.right + 14,
-                action_rect.top,
-                panel.right - action_rect.right - 32,
-                action_rect.height,
-            )
+            gap = 14
+            column_width = (catalog_rect.width - gap) // 2
+            categories = {
+                "Skill": [
+                    (index, action)
+                    for index, action in enumerate(actions)
+                    if action.engine_action == "Use Skill"
+                ],
+                "Spell": [
+                    (index, action)
+                    for index, action in enumerate(actions)
+                    if action.engine_action == "Cast Spell"
+                ],
+            }
             action_rows = []
-            y = action_rect.top + 8
-            action_offset = max(0, min(action_offset, max(0, len(actions) - 10)))
-            if selected_action < action_offset:
-                action_offset = selected_action
-            elif selected_action >= action_offset + 10:
-                action_offset = selected_action - 9
-            for index, action in enumerate(
-                actions[action_offset : action_offset + 10], start=action_offset
-            ):
-                rect = pygame.Rect(action_rect.left + 6, y, action_rect.width - 12, 28)
-                action_rows.append(rect)
-                if index == selected_action:
-                    pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
-                self._draw_text(
-                    action.display_label,
-                    self.small_font,
-                    self.colors.WHITE,
-                    rect.left + 6,
-                    rect.top + 5,
-                    rect.width - 12,
+            icon_manager = get_ability_icon_manager()
+            visible_count = max(1, (catalog_rect.height - 34) // 50)
+            for column, category in enumerate(("Skill", "Spell")):
+                column_rect = pygame.Rect(
+                    catalog_rect.left + column * (column_width + gap),
+                    catalog_rect.top,
+                    column_width,
+                    catalog_rect.height,
                 )
-                y += 31
+                pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, column_rect, 1)
+                self._draw_text(
+                    f"{category}s",
+                    self.normal_font,
+                    self.colors.GOLD,
+                    column_rect.left + 8,
+                    column_rect.top + 7,
+                    column_rect.width - 16,
+                )
+                entries = categories[category]
+                selected_in_category = next(
+                    (
+                        position
+                        for position, (index, _action) in enumerate(entries)
+                        if index == selected_action
+                    ),
+                    None,
+                )
+                offset = min(category_offsets[category], max(0, len(entries) - visible_count))
+                if selected_in_category is not None:
+                    if selected_in_category < offset:
+                        offset = selected_in_category
+                    elif selected_in_category >= offset + visible_count:
+                        offset = selected_in_category - visible_count + 1
+                category_offsets[category] = offset
+                y = column_rect.top + 32
+                for index, action in entries[offset : offset + visible_count]:
+                    rect = pygame.Rect(column_rect.left + 6, y, column_rect.width - 12, 45)
+                    action_rows.append((index, category, rect))
+                    fill = self.colors.HIGHLIGHT_BG if index == selected_action else (29, 29, 35)
+                    pygame.draw.rect(self.screen, fill, rect, border_radius=4)
+                    pygame.draw.rect(
+                        self.screen,
+                        self.colors.GOLD if index == selected_action else self.colors.BORDER_COLOR,
+                        rect,
+                        2 if index == selected_action else 1,
+                        border_radius=4,
+                    )
+                    icon = pygame.transform.smoothscale(
+                        icon_manager.get_icon(action.icon_key),
+                        (34, 34),
+                    )
+                    self.screen.blit(icon, (rect.left + 6, rect.top + 5))
+                    label = action.display_name.replace(f"{category}: ", "")
+                    self._draw_text(
+                        label,
+                        self.small_font,
+                        self.colors.WHITE,
+                        rect.left + 46,
+                        rect.top + 7,
+                        rect.width - 52,
+                    )
+                    y += 50
+
             slot_rows = []
-            y = slot_rect.top + 8
+            slot_y = panel.bottom - 116
+            self._draw_text(
+                "Combat Shortcuts",
+                self.normal_font,
+                self.colors.GOLD,
+                panel.left + 18,
+                slot_y - 25,
+                panel.width - 36,
+            )
+            slot_width = max(72, (panel.width - 48) // 6)
             for slot in shortcut_presentations(player_char):
-                rect = pygame.Rect(slot_rect.left + 4, y, slot_rect.width - 8, 34)
+                rect = pygame.Rect(
+                    panel.left + 18 + slot.index * slot_width,
+                    slot_y,
+                    slot_width - 5,
+                    88,
+                )
                 slot_rows.append(rect)
                 if slot.index == selected_slot:
                     pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
-                    pygame.draw.rect(self.screen, self.colors.GOLD, rect, 1)
+                pygame.draw.rect(
+                    self.screen,
+                    self.colors.GOLD if slot.index == selected_slot else self.colors.BORDER_COLOR,
+                    rect,
+                    2 if slot.index == selected_slot else 1,
+                    border_radius=4,
+                )
                 self._draw_text(
-                    slot.display_label,
+                    str(slot.index + 1),
                     self.small_font,
-                    self.colors.WHITE,
+                    self.colors.GOLD,
+                    rect.left + 6,
+                    rect.top + 5,
+                    18,
+                )
+                if slot.action is not None:
+                    icon = pygame.transform.smoothscale(
+                        icon_manager.get_icon(slot.action.icon_key),
+                        (36, 36),
+                    )
+                    self.screen.blit(icon, icon.get_rect(centerx=rect.centerx, top=rect.top + 8))
+                    label = slot.action.display_name.replace("Spell: ", "").replace("Skill: ", "")
+                else:
+                    label = "Empty"
+                self._draw_text(
+                    label,
+                    self.small_font,
+                    self.colors.WHITE if slot.action is not None else self.colors.GRAY,
                     rect.left + 5,
-                    rect.top + 7,
+                    rect.top + 51,
                     rect.width - 10,
                 )
-                y += 38
+            if dragged_action is not None and dragged_position is not None:
+                drag_icon = pygame.transform.smoothscale(
+                    icon_manager.get_icon(actions[dragged_action].icon_key),
+                    (42, 42),
+                )
+                drag_icon.set_alpha(210)
+                self.screen.blit(drag_icon, drag_icon.get_rect(center=dragged_position))
             pygame.display.flip()
             input_armed = release_guard_allows_input(True, input_armed)
             for event in pygame.event.get():
@@ -429,18 +525,65 @@ class CharacterEquipmentMixin:
                         reference = actions[selected_action].reference
                         if reference is not None:
                             assign_shortcut(player_char, selected_slot, reference)
-                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                elif event.type == pygame.MOUSEWHEEL:
+                    position = pygame.mouse.get_pos()
+                    for _index, category, rect in action_rows:
+                        if rect.collidepoint(position):
+                            entries = categories[category]
+                            category_offsets[category] = max(
+                                0,
+                                min(
+                                    max(0, len(entries) - visible_count),
+                                    category_offsets[category] - event.y,
+                                ),
+                            )
+                            break
+                elif event.type in (
+                    pygame.MOUSEMOTION,
+                    pygame.MOUSEBUTTONDOWN,
+                    pygame.MOUSEBUTTONUP,
+                ):
                     position = mouse_position(event)
-                    action_index = hit_index(action_rows, position)
+                    action_index = next(
+                        (
+                            index
+                            for index, _category, rect in action_rows
+                            if rect.collidepoint(position)
+                        ),
+                        None,
+                    )
                     slot_index = hit_index(slot_rows, position)
                     if action_index is not None:
-                        selected_action = action_offset + action_index
-                    if slot_index is not None:
-                        selected_slot = slot_index
-                        if is_left_click(event):
-                            reference = actions[selected_action].reference
+                        selected_action = action_index
+                    if event.type == pygame.MOUSEBUTTONDOWN and is_left_click(event):
+                        if action_index is not None:
+                            dragged_action = action_index
+                            dragged_position = position
+                        elif slot_index is not None:
+                            selected_slot = slot_index
+                            slot_action = shortcut_presentations(player_char)[slot_index].action
+                            if slot_action is not None:
+                                dragged_action = next(
+                                    (
+                                        index
+                                        for index, learned in enumerate(actions)
+                                        if learned.reference == slot_action.reference
+                                    ),
+                                    None,
+                                )
+                                dragged_position = position
+                    elif event.type == pygame.MOUSEMOTION and dragged_action is not None:
+                        dragged_position = position
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        if slot_index is not None and dragged_action is not None:
+                            reference = actions[dragged_action].reference
                             if reference is not None:
-                                assign_shortcut(player_char, selected_slot, reference)
+                                assign_shortcut(player_char, slot_index, reference)
+                            selected_slot = slot_index
+                        dragged_action = None
+                        dragged_position = None
+                    elif slot_index is not None:
+                        selected_slot = slot_index
 
     def open_selected_equipment_change(self, player_char) -> None:
         slot_name = self.selected_equipment_slot(player_char)

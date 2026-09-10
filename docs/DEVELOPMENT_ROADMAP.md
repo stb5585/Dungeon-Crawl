@@ -152,8 +152,9 @@ findings using [`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md).
 The current playtest slice improves action readability without changing combat
 numbers: a persisted six-slot ability bar, compact fixed commands, a
 badge-based timeline without visible readiness calculations, and persistent
-environmental-effect feedback. Character Menu Action Layout is the only
-shortcut editor; All Actions remains the full read-only catalog.
+environmental-effect feedback. The Character Menu's combined Abilities workspace
+splits learned Skills and Spells into icon cards that can be dragged onto shortcut
+slots; All Actions remains the full read-only combat catalog.
 
 The slice also standardizes stat-debuff wording and lets non-player actors use
 item-gated abilities without carrying or consuming player inventory. Player
@@ -161,9 +162,12 @@ item requirements remain unchanged. Focused regressions cover action
 availability, anti-magic feedback, debuff text, and enemy/familiar ability use.
 
 ## Improvements Found on Playtesting
-- selecting an empty action button should do nothing instead of wasting the turn
-- the Action Layout screen in the Character Menu should be designed as a drag and drop-style with the icons; in fact these two menus (Specials and Action Layout) could be rolled into a single tab with the learned abilities (split into skills and spells)
-- currently everything resolves before the end of the combat view closes and before the enemy even fades away; this results in several things updating before needed
-  - level up (HP/MP gain, level change)
-  - timeline portrait badges of deceased targets go away
-- the timeline display in combat and the current actor box should be combined; the blue of the player and red of the enemy can be reused as the outlines of the timeline icons
+
+- Empty shortcut buttons are inert and cannot commit a turn.
+- Specials and Action Layout are combined into an icon-based Abilities workspace,
+  split into learned Skills and Spells with drag-and-drop shortcut assignment.
+- Victory rewards and level-up mutations are deferred until the enemy fade finishes;
+  the pre-reward combat frame remains behind the outcome popup.
+- Defeated timeline badges remain until their sprites finish fading.
+- The current actor is integrated into the timeline ribbon, with blue player-side
+  and red enemy-side token outlines.

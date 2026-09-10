@@ -431,13 +431,6 @@ class CombatOverlayMixin:
             130,
         )
         self._render_player_danger_vignette(player_char)
-        self._render_turn_indicator(
-            player_char,
-            enemy,
-            current_turn=current_turn,
-            overlay=True,
-            current_actor=current_actor,
-        )
         self._render_telegraph_banner(enemy=enemy, overlay=True)
         has_sight = self._enemy_details_visible(player_char, enemy, show_enemy_details)
         self._render_enemy_info_panel(enemy, has_sight, overlay=True)
@@ -451,6 +444,7 @@ class CombatOverlayMixin:
             player_char,
             engine=engine,
             current_actor=current_actor,
+            current_turn=current_turn,
         )
         if interface_snapshot is not None:
             self._render_environmental_effect_banner(interface_snapshot.environmental_effects)
@@ -460,19 +454,28 @@ class CombatOverlayMixin:
             self._render_action_menu_overlay(actions, selected_action, interface_snapshot)
 
     def _render_timeline_ribbon(
-        self, entries, player_char, *, engine=None, current_actor=None
+        self,
+        entries,
+        player_char,
+        *,
+        engine=None,
+        current_actor=None,
+        current_turn=None,
     ) -> None:
-        """Render upcoming opportunities as actor tokens, never readiness values."""
+        """Render the current actor and upcoming opportunities in one ribbon."""
         if not entries:
             return
         view_width = int(self.screen_width * 0.65)
-        token_size = 26
         visible_entries = entries[:6]
+        active_width = 154
+        next_token_size = 28
+        next_spacing = next_token_size + 8
+        width = active_width + max(0, len(visible_entries) - 1) * next_spacing + 16
         rect = pygame.Rect(
-            max(8, view_width - (len(visible_entries) * (token_size + 5)) - 18),
+            max(8, view_width - width - 10),
             164,
-            len(visible_entries) * (token_size + 5) + 12,
-            token_size + 10,
+            width,
+            58,
         )
         self._draw_panel_surface(
             rect,
@@ -482,20 +485,38 @@ class CombatOverlayMixin:
             alpha=210,
             border_width=1,
         )
-        active_actor_id = getattr(engine, "current_actor_id", None)
+        label_font = pygame.font.Font(None, 20)
+        name_font = pygame.font.Font(None, 16)
         for index, entry in enumerate(visible_entries):
+            active = index == 0
+            token_size = 40 if active else next_token_size
+            next_token_x = rect.left + active_width + (index - 1) * next_spacing
+            token_x = rect.left + 9 if active else next_token_x
             token_rect = pygame.Rect(
-                rect.left + 7 + index * (token_size + 5),
-                rect.top + 5,
+                token_x,
+                rect.centery - token_size // 2,
                 token_size,
                 token_size,
             )
-            active = entry.actor_id == active_actor_id
-            border = (246, 206, 91) if active else (110, 110, 125)
+            border = self._timeline_actor_border(entry.actor_id)
             pygame.draw.rect(self.screen, (30, 30, 38), token_rect.inflate(4, 4), border_radius=4)
-            pygame.draw.rect(self.screen, border, token_rect.inflate(4, 4), 2, border_radius=4)
+            pygame.draw.rect(
+                self.screen,
+                border,
+                token_rect.inflate(4, 4),
+                3 if active else 2,
+                border_radius=4,
+            )
             actor = self._timeline_actor(entry.actor_id, player_char, engine, current_actor)
-            token = self._timeline_token(actor, entry.actor_id, player_char, token_size)
+            hidden_enemy = entry.actor_id != PLAYER_ACTOR_ID and self._enemy_hidden_by_invisibility(
+                actor,
+                self._has_sight(player_char),
+            )
+            token = (
+                None
+                if hidden_enemy
+                else self._timeline_token(actor, entry.actor_id, player_char, token_size)
+            )
             if token is not None:
                 self.screen.blit(token, token.get_rect(center=token_rect.center))
             else:
@@ -503,11 +524,44 @@ class CombatOverlayMixin:
                     str(entry.display_label or "?")[:1].upper(), True, (230, 225, 210)
                 )
                 self.screen.blit(fallback, fallback.get_rect(center=token_rect.center))
+            if active:
+                player_turn = current_turn == "player" or (
+                    current_turn is None and entry.actor_id == PLAYER_ACTOR_ID
+                )
+                label = "Your Turn" if player_turn else "Enemy Turn"
+                actor_name = str(getattr(actor, "name", "") or entry.display_label)
+                if hidden_enemy:
+                    actor_name = presented_enemy_name(actor, self._has_sight(player_char))
+                actor_name = self._truncate_text(name_font, actor_name, active_width - 62)
+                self.screen.blit(
+                    label_font.render(label, True, (250, 245, 230)),
+                    (token_rect.right + 9, rect.top + 10),
+                )
+                self.screen.blit(
+                    name_font.render(actor_name, True, (205, 205, 210)),
+                    (token_rect.right + 9, rect.top + 34),
+                )
+
+        if len(visible_entries) > 1:
+            pygame.draw.line(
+                self.screen,
+                (100, 100, 115),
+                (rect.left + active_width - 8, rect.top + 8),
+                (rect.left + active_width - 8, rect.bottom - 8),
+                1,
+            )
+
+    def _timeline_actor_border(self, actor_id: str) -> tuple[int, int, int]:
+        """Return the established side color for a timeline token outline."""
+        key = "turn_player" if actor_id == PLAYER_ACTOR_ID else "turn_enemy"
+        return self.colors[key]
 
     @staticmethod
     def _timeline_actor(actor_id, player_char, engine, current_actor):
         """Resolve a timeline actor from its stable ID for token rendering."""
         if actor_id == PLAYER_ACTOR_ID:
+            if getattr(engine, "current_actor_id", None) == actor_id and current_actor is not None:
+                return current_actor
             return player_char
         if getattr(engine, "current_actor_id", None) == actor_id and current_actor is not None:
             return current_actor
@@ -526,6 +580,8 @@ class CombatOverlayMixin:
             return None
         try:
             if actor_id == PLAYER_ACTOR_ID:
+                if actor is not player_char:
+                    return get_companion_art_manager().get_scaled_sprite(actor, (size, size))
                 return self.player_token_manager.get_scaled_token(player_char, (size, size))
             return self.enemy_token_manager.get_scaled_token(actor, (size, size))
         except (AttributeError, OSError, pygame.error):

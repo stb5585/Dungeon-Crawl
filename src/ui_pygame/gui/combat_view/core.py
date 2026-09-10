@@ -196,6 +196,13 @@ class CombatViewCoreMixin:
         animator = self._get_sprite_animator(enemy)
         animator.trigger_death()
 
+    def death_animation_in_progress(self) -> bool:
+        """Return whether a defeated combatant is still visibly fading."""
+        return any(
+            animator.animation_type == "death" and not animator.is_dead
+            for animator in self.sprite_animators.values()
+        )
+
     def set_hidden_enemy_identities(self, enemy_names) -> None:
         """Set canonical enemy names that current combat text must conceal."""
         self._hidden_enemy_names = {str(name) for name in enemy_names if str(name)}

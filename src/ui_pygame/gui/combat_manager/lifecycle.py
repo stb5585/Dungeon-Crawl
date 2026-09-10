@@ -114,6 +114,7 @@ class CombatLifecycleMixin:
 
         # Initialize combat state
         self.running = True
+        self._last_combat_timeline = ()
         self.combat_view.reset_combat_log()
         has_sight = player_has_sight(player_char)
         hidden_names = [
@@ -876,6 +877,14 @@ class CombatLifecycleMixin:
     def _execute_action(self, action, player_char, enemy):
         """Execute a player action by delegating to the engine."""
         actor = getattr(self.engine, "attacker", None) or player_char
+        if isinstance(action, str):
+            slot_number, separator, slot_label = action.partition(". ")
+            if (
+                separator
+                and slot_number.isdigit()
+                and slot_label in {"Empty", "Unavailable assignment"}
+            ):
+                return None
         if isinstance(action, str) and action.endswith(" — Not available this turn."):
             self.combat_view.add_combat_message("That system command is not available this turn.")
             return None

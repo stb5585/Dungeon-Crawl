@@ -235,6 +235,9 @@ class CombatOutcomeMixin:
         interface_snapshot = (
             combat_interface_snapshot(self.engine, player_char) if self.engine is not None else None
         )
+        timeline_entries = self._timeline_entries_for_frame(
+            interface_snapshot.timeline if interface_snapshot is not None else ()
+        )
 
         # Clear screen
         self.screen.fill((0, 0, 0))
@@ -319,7 +322,7 @@ class CombatOutcomeMixin:
             current_turn=current_turn,
             show_enemy_details=show_enemy_details,
             current_actor=current_actor,
-            timeline_entries=interface_snapshot.timeline if interface_snapshot is not None else (),
+            timeline_entries=timeline_entries,
             interface_snapshot=interface_snapshot,
             engine=self.engine,
         )
@@ -338,6 +341,24 @@ class CombatOutcomeMixin:
             active_summon=active_summon,
             combat_resources=interface_snapshot.resources if interface_snapshot is not None else (),
         )
+
+    def _timeline_entries_for_frame(self, fresh_entries):
+        """Keep defeated actor badges until their matching sprite fade completes."""
+        fresh_entries = tuple(fresh_entries)
+        previous_entries = tuple(getattr(self, "_last_combat_timeline", ()))
+        is_fading = getattr(self.combat_view, "death_animation_in_progress", None)
+        if not previous_entries or not callable(is_fading) or not is_fading():
+            self._last_combat_timeline = fresh_entries
+            return fresh_entries
+
+        visible_actor_ids = {entry.actor_id for entry in fresh_entries}
+        entries = list(fresh_entries)
+        for old_index, entry in enumerate(previous_entries):
+            if entry.actor_id not in visible_actor_ids:
+                entries.insert(min(old_index, len(entries)), entry)
+        merged = tuple(entries[:6])
+        self._last_combat_timeline = merged
+        return merged
 
     def _record_bestiary_ability_if_visible(self, player_char, enemy, ability_name) -> None:
         if self.engine is None or not hasattr(self.engine, "show_enemy_details"):
@@ -415,7 +436,54 @@ class CombatOutcomeMixin:
         ):
             return self._handle_vesperion_true_final_victory(player_char, enemy)
 
+        encounter = getattr(self.engine, "encounter", None)
+        tamed_members = (
+            [
+                member
+                for member in encounter.members
+                if getattr(member.enemy, "tamed_by_player", False)
+            ]
+            if encounter is not None
+            else []
+        )
+        if encounter is None and getattr(enemy, "tamed_by_player", False):
+            tamed_members = [type("_TamedMember", (), {"enemy": enemy})()]
+        tamed_victory = (
+            bool(tamed_members)
+            and len(encounter.members if encounter is not None else [enemy]) == 1
+        )
+        repelled_victory = bool(getattr(enemy, "paladin_repelled", False))
+
+        # Finish the battlefield presentation before rewards can mutate the HUD.
         pre_outcome_background = self.screen.copy()
+        death_in_progress = getattr(self.combat_view, "death_animation_in_progress", None)
+        expected_victory = (
+            not fled
+            and player_char.is_alive()
+            and (
+                not enemy.is_alive()
+                or tamed_victory
+                or repelled_victory
+                or (callable(death_in_progress) and death_in_progress())
+            )
+        )
+        if expected_victory:
+            if not tamed_victory and not repelled_victory:
+                clock = pygame.time.Clock()
+                for _ in range(DEATH_ANIMATION_FRAMES):
+                    self._render_combat_frame(player_char, enemy, [], -1)
+                    pygame.display.flip()
+                    clock.tick(60)
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit(0)
+                        self._handle_combat_log_scroll_event(event)
+                self._pause_with_events(POST_DEATH_PAUSE_MS)
+            else:
+                self._refresh_combat_background(player_char, enemy)
+            pre_outcome_background = self.screen.copy()
+            self._combat_background = pre_outcome_background
 
         # Let the engine handle all bookkeeping (exp, loot, quests, kill tracking, etc.)
         outcome = self.engine.end_battle()
@@ -434,23 +502,6 @@ class CombatOutcomeMixin:
             return False
 
         elif outcome.result == "victory":
-            encounter = getattr(self.engine, "encounter", None)
-            tamed_members = (
-                [
-                    member
-                    for member in encounter.members
-                    if getattr(member.enemy, "tamed_by_player", False)
-                ]
-                if encounter is not None
-                else []
-            )
-            if encounter is None and getattr(enemy, "tamed_by_player", False):
-                tamed_members = [type("_TamedMember", (), {"enemy": enemy})()]
-            tamed_victory = (
-                bool(tamed_members)
-                and len(encounter.members if encounter is not None else [enemy]) == 1
-            )
-            repelled_victory = bool(getattr(enemy, "paladin_repelled", False))
             # Build end messages from outcome
             if encounter is not None and len(encounter.members) > 1:
                 end_messages = ["Victory! Encounter complete!"]
@@ -506,23 +557,11 @@ class CombatOutcomeMixin:
             if outcome.level_up:
                 end_messages.append("\nLEVEL UP!")
 
-            if not tamed_victory and not repelled_victory:
-                # Render final combat state and let death animation complete.
-                clock = pygame.time.Clock()
-                for _ in range(DEATH_ANIMATION_FRAMES):
-                    self._render_combat_frame(player_char, enemy, [], -1)
-                    pygame.display.flip()
-                    clock.tick(60)
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            sys.exit(0)
-                        self._handle_combat_log_scroll_event(event)
-
-                self._pause_with_events(POST_DEATH_PAUSE_MS)
-            else:
-                self._refresh_combat_background(player_char, enemy)
-            _show_end_popup("\n".join(end_messages))
+            _show_end_popup(
+                "\n".join(end_messages),
+                background=pre_outcome_background,
+                refresh_background=False,
+            )
             if tamed_members:
                 self._prompt_for_tamed_companion_name(
                     player_char,
@@ -535,6 +574,7 @@ class CombatOutcomeMixin:
 
             self.combat_view.reset_combat_log()
             self._combat_background = None
+            self._last_combat_timeline = ()
             return True
 
         elif outcome.result == "flee":

@@ -281,10 +281,11 @@ structural work.
 
 ### Presentation And Recovery Contract
 
-- Keyboard keys 1-6 activate shortcuts. Character Menu Action Layout is the
-  sole non-turn-consuming shortcut editor; All Actions is a read-only catalog.
-  Mouse and controller navigation provide equivalent selection, target, detail,
-  and cancellation operations.
+- Keyboard keys 1-6 activate shortcuts. Empty shortcut slots are inert. The
+  Character Menu's Abilities workspace combines the learned Skills and Spells
+  catalog with an icon-based, drag-and-drop shortcut editor; All Actions is a
+  read-only combat catalog. Mouse and controller navigation provide equivalent
+  selection, target, detail, and cancellation operations.
 - Shortcut references contain an ability slug or existing item serializer
   token. Missing items leave a disabled assignment. Empty slots auto-fill from
   learned active abilities in acquisition order without overwriting a player
@@ -297,11 +298,12 @@ structural work.
 - Keyboard Q/E, lane clicks, and controller LB/RB change focus. Controller
   parity uses D-pad navigation, A confirm, B back, Y for All Actions, and X for
   resource details.
-- The HUD shows the next six predicted normal actor opportunities and up to
-  three prioritized class-resource rows supplied under stable provider keys.
-  Extra rows collapse behind an accessible `+N` detail entry; icons, labels,
-  values/caps or state text, and ready indicators carry meaning without relying
-  on color.
+- The HUD combines the current actor with the next six predicted normal actor
+  opportunities. Player-side and enemy-side token outlines reuse the established
+  blue and red turn colors, while text retains complete meaning without color.
+  Defeated actor badges remain through their sprite fade. Up to three prioritized
+  class-resource rows are supplied under stable provider keys; extra rows collapse
+  behind an accessible `+N` detail entry.
 - The minimum supported layout remains 1024x720 and the existing two enemy
   lanes remain authoritative. Concealed lanes show only a generic presence.
 - Dungeon and paid Inn resting are deferred. Current town auto-heal remains
@@ -361,10 +363,11 @@ Current slice status:
 - Interface: complete; the Pygame combat surface projects six persisted typed
   shortcut slots as an icon-capable action bar, fixed compact system commands,
   and an All Actions catalog that keeps learned-but-unavailable actions visible
-  with an engine-derived reason. Character Menu Action Layout is the only
-  shortcut editor. The HUD receives prioritized text-complete class-resource
-  rows, active environmental-effect feedback, and a six-token projection of
-  core-owned readiness opportunities; readiness numbers remain diagnostic-only.
+  with an engine-derived reason. The Character Menu Abilities workspace is the
+  only shortcut editor. The HUD receives prioritized text-complete class-resource
+  rows, active environmental-effect feedback, and a combined current-actor and
+  six-token projection of core-owned readiness opportunities; readiness numbers
+  remain diagnostic-only.
   Existing concealed enemy lanes retain their generic presence presentation.
   Keyboard/mouse operations now have controller parity for navigation, confirmation, cancellation,
   focus, All Actions, and resource details.
