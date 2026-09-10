@@ -469,15 +469,8 @@ class RendererSpecialTileMixin:
 
         gathering_definition = map_tiles.definition_for_tile(tile)
         if gathering_definition is not None:
-            self._render_floor_sprite(
-                gathering_definition.overlay_key,
-                rect,
-                darkness=darkness,
-                depth=depth,
-                kind="decorative_prop",
-                side=side,
-                lateral_view=lateral_view,
-            )
+            # Gathering assets are projected as part of their floor tile. This
+            # keeps them grounded in perspective, including beneath the player.
             return
 
         decorative_sprite_key = self._get_decorative_floor_sprite_key(tile_type)

@@ -190,3 +190,9 @@ landmark and town-conversation objectives; the early Magic Shop quests provide
 route guidance without constraining exploration. Boss fights include Defend,
 and Charge now pays off its one-round setup with 2.5× weapon damage while
 retaining its contested one-turn stun.
+
+Follow-up tuning makes the two conversation beats staged leads rather than
+standalone turn-ins: the Barkeep points Seraphine's commission to the first
+descent, and Griswold turns Mara's lead into a Bandit contract. Green and Red
+Slimes now share the existing Fungus Spore drop, so the early Spore quest is
+open to every class; the Lich commission moves to level 55.

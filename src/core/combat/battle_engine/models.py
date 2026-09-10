@@ -80,6 +80,7 @@ class BattleOutcome:
     message: str = ""  # Summary text (exp, loot, quests, etc.)
     level_up: bool = False
     boss: bool = False
+    enemy_escaped: bool = False
     rewards_settled: bool = True
     member_settlements: tuple[EnemySettlement, ...] = ()
     total_experience: int = 0

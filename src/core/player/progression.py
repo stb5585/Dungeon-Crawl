@@ -213,7 +213,7 @@ class PlayerProgressionMixin:
                     ):
                         self.quest_dict["Bounty"][enemy.name][2] = True
                         quest_message += "You have completed a bounty.\n"
-            elif enemy.name == "Waitress":
+            if enemy.name == "Waitress":
                 self.quest_dict["Side"]["Something to Cry About"]["Completed"] = True
                 quest_message += "You have completed the quest Something to Cry About.\n"
             else:
@@ -225,43 +225,9 @@ class PlayerProgressionMixin:
                         self.quest_dict["Main"][quest]["Completed"] = True
                         quest_message += f"You have completed the quest {quest}.\n"
 
-                for quest in self.quest_dict["Side"]:
-                    quest_info = self.quest_dict["Side"][quest]
-                    if (
-                        quest_info.get("Type") == "Defeat"
-                        and quest_info.get("What") == enemy.name
-                        and not quest_info.get("Completed")
-                    ):
-                        total = max(1, int(quest_info.get("Total", 1) or 1))
-                        defeated = int(quest_info.get("Killed", 0) or 0) + 1
-                        quest_info["Killed"] = min(total, defeated)
-                        if defeated >= total:
-                            quest_info["Completed"] = True
-                            quest_message += f"You have completed the quest {quest}.\n"
+                quest_message += quest_progress.record_defeat(self, enemy.name)
         elif item is not None:
-            for quest in self.quest_dict["Side"]:
-                try:
-                    quest_what = self.quest_dict["Side"][quest]["What"]
-                    if isinstance(quest_what, str):
-                        matches_item = quest_what in [item.name, item.__class__.__name__]
-                    else:
-                        matches_item = quest_what.name == item.name
-
-                    if matches_item:
-                        quest_data = self.quest_dict["Side"][quest]
-                        if quest_data.get("Type") != "Collect":
-                            continue
-                        collected = int(quest_data.get("Collected", 0) or 0) + 1
-                        quest_data["Collected"] = min(int(quest_data.get("Total", 1) or 1), collected)
-                        if (
-                            collected >= quest_data["Total"]
-                            and not quest_data.get("Completed")
-                        ):
-                            quest_data["Completed"] = True
-                            quest_message += f"You have completed the quest {quest}.\n"
-                        break
-                except (AttributeError, TypeError):
-                    pass
+            quest_message += quest_progress.record_collection(self, item)
         else:
             quest_message += quest_progress.sync_relic_story_progress(self)
         return quest_message

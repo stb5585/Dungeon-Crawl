@@ -633,12 +633,13 @@ class QuestManager:
         """
         conversation_message = quest_progress.record_conversation(self.player_char, giver)
         quest_progress.sync_relic_story_progress(self.player_char)
+        quest_progress.sync_collection_progress(self.player_char)
         did_action = False
         showed_message = False
         quest_was_offered = False
         if conversation_message:
             self._show_hint(conversation_message.rstrip())
-            showed_message = True
+            return True, True
         mains, sides = self._eligible_quests(giver)
 
         # Turn-in checks, then offers

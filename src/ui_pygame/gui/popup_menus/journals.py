@@ -245,6 +245,10 @@ class QuestPopupMenu(BasePopupMenu):
             text = self.normal_font.render(objective, True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
+            defeated = total if quest_data.get("Turned In", False) else quest_data.get("Killed", 0)
+            text = self.normal_font.render(f"Defeated: {defeated}/{total}", True, self.WHITE)
+            self.screen.blit(text, (x, y))
+            y += self.line_height
         elif quest_type == "Collect":
             what = quest_data.get("What")
 
@@ -315,7 +319,7 @@ class QuestPopupMenu(BasePopupMenu):
                         ):
                             current += len(item_list)
 
-            displayed_current = total if quest_data.get("Turned In", False) else current
+            displayed_current = total if quest_data.get("Turned In", False) else min(total, current)
             text = self.normal_font.render(
                 f"Collected: {displayed_current}/{total}",
                 True,

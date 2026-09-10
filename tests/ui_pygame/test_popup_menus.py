@@ -1390,6 +1390,7 @@ def test_quest_popup_build_and_details_cover_main_side_and_bounty(monkeypatch):
     popup.draw_details(player)
     assert "Description:" in presenter.normal_font.render_calls
     assert any("dragon has returned" in call for call in presenter.normal_font.render_calls)
+    assert "Defeated: 0/1" in presenter.normal_font.render_calls
     assert popup.on_select(player, popup.items[0]) is None
 
 

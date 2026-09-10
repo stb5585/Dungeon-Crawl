@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 from src.core import items, quest_progress
 from src.core.data.data_loader import get_quests
+from tests.test_framework import TestGameState
 
 
 def _player():
@@ -98,3 +99,78 @@ def test_location_and_conversation_objectives_complete_only_matching_active_ques
     assert quest_progress.record_conversation(player, "Barkeep") == ""
     assert quest_progress.record_conversation(player, "Griswold") == "You have completed the quest Speak to Griswold.\n"
     assert player.quest_dict["Side"]["Already Done"]["Completed"] is True
+
+
+def test_staged_talk_objective_advances_to_its_combat_objective():
+    player = _player()
+    player.quest_dict["Side"]["Mara's Contract"] = {
+        "Type": "Talk",
+        "What": "Griswold",
+        "Stage": "ask_griswold",
+        "Completed": False,
+        "Turned In": False,
+        "Stages": {
+            "ask_griswold": {
+                "Type": "Talk",
+                "What": "Griswold",
+                "Next Stage": "defeat_bandits",
+                "Progress Text": "Griswold identifies the Bandits behind the theft.",
+            },
+            "defeat_bandits": {
+                "Type": "Defeat",
+                "What": "Bandit",
+                "Total": 2,
+                "Completion Text": "The route is clear. Return to Mara.",
+            },
+        },
+    }
+
+    message = quest_progress.record_conversation(player, "Griswold")
+    quest = player.quest_dict["Side"]["Mara's Contract"]
+
+    assert "identifies the Bandits" in message
+    assert quest["Stage"] == "defeat_bandits"
+    assert quest["Type"] == "Defeat"
+    assert quest_progress.record_defeat(player, "Bandit") == ""
+    assert quest_progress.record_defeat(player, "Bandit") == "The route is clear. Return to Mara.\n"
+    assert quest["Completed"] is True
+
+
+def test_bounty_kills_also_advance_matching_side_defeat_objectives():
+    player = TestGameState.create_player(class_name="Warrior", level=10)
+    player.quest_dict = {
+        "Main": {},
+        "Side": {
+            "Mara's Contract": {
+                "Type": "Defeat", "What": "Bandit", "Total": 2,
+                "Completed": False, "Turned In": False,
+            }
+        },
+        "Bounty": {"Bandit": [{"num": 3}, 0, False]},
+    }
+
+    player.quests(enemy=SimpleNamespace(name="Bandit"))
+    player.quests(enemy=SimpleNamespace(name="Bandit"))
+
+    assert player.quest_dict["Bounty"]["Bandit"][1] == 2
+    assert player.quest_dict["Side"]["Mara's Contract"]["Killed"] == 2
+    assert player.quest_dict["Side"]["Mara's Contract"]["Completed"] is True
+
+
+def test_collection_progress_completes_at_inventory_target_and_caps_legacy_overflow():
+    player = _player()
+    player.inventory = {"Mystery Meat": [items.MysteryMeat() for _ in range(16)]}
+    player.quest_dict["Side"]["Where's the Beef?"] = {
+        "Type": "Collect",
+        "What": "MysteryMeat",
+        "Total": 12,
+        "Collected": 16,
+        "Completed": False,
+        "Turned In": False,
+    }
+
+    quest_progress.sync_collection_progress(player)
+
+    quest = player.quest_dict["Side"]["Where's the Beef?"]
+    assert quest["Collected"] == 12
+    assert quest["Completed"] is True

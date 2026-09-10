@@ -29,9 +29,20 @@ def ensure_quest_categories(player) -> dict[str, dict]:
     return quest_dict
 
 
+def _activate_quest_stage(quest_data: dict[str, Any], stage_name: str) -> None:
+    """Make one declarative quest stage the active top-level objective."""
+    stage = quest_data.get("Stages", {}).get(stage_name, {})
+    quest_data["Stage"] = stage_name
+    for key in ("Type", "What", "Total", "Target Position", "Help Text"):
+        if key in stage:
+            quest_data[key] = deepcopy(stage[key])
+        elif key == "Target Position":
+            quest_data.pop(key, None)
+
+
 def _complete_matching_side_quests(player, quest_type: str, predicate) -> str:
-    """Complete active side quests of ``quest_type`` accepted by ``player``."""
-    completed: list[str] = []
+    """Advance active side quests of ``quest_type`` accepted by ``player``."""
+    messages: list[str] = []
     for quest_name, quest_data in ensure_quest_categories(player)["Side"].items():
         if (
             isinstance(quest_data, dict)
@@ -40,9 +51,25 @@ def _complete_matching_side_quests(player, quest_type: str, predicate) -> str:
             and not quest_data.get("Turned In")
             and predicate(quest_data)
         ):
-            quest_data["Completed"] = True
-            completed.append(quest_name)
-    return "".join(f"You have completed the quest {name}.\n" for name in completed)
+            messages.append(_advance_or_complete_quest(quest_name, quest_data))
+    return "\n".join(messages) + ("\n" if messages else "")
+
+
+def _advance_or_complete_quest(quest_name: str, quest_data: dict[str, Any]) -> str:
+    """Advance a staged quest or return its final completion text."""
+    stage = quest_data.get("Stages", {}).get(quest_data.get("Stage"), {})
+    next_stage = stage.get("Next Stage") if isinstance(stage, dict) else None
+    if isinstance(next_stage, str) and next_stage in quest_data.get("Stages", {}):
+        _activate_quest_stage(quest_data, next_stage)
+        progress_text = stage.get("Progress Text", "")
+        if isinstance(progress_text, str) and progress_text.strip():
+            return progress_text.rstrip()
+        return ""
+    quest_data["Completed"] = True
+    completion_text = stage.get("Completion Text", "")
+    if isinstance(completion_text, str) and completion_text.strip():
+        return completion_text.rstrip()
+    return f"You have completed the quest {quest_name}."
 
 
 def record_location(player, position: tuple[int, int, int]) -> str:
@@ -63,6 +90,94 @@ def record_conversation(player, npc_name: str) -> str:
         "Talk",
         lambda quest_data: quest_data.get("What") == npc_name,
     )
+
+
+def record_defeat(player, enemy_name: str) -> str:
+    """Record a defeated enemy against active side-quest objectives."""
+    messages: list[str] = []
+    for quest_name, quest_data in ensure_quest_categories(player)["Side"].items():
+        if (
+            not isinstance(quest_data, dict)
+            or quest_data.get("Type") != "Defeat"
+            or quest_data.get("What") != enemy_name
+            or quest_data.get("Completed")
+            or quest_data.get("Turned In")
+        ):
+            continue
+        total = max(1, int(quest_data.get("Total", 1) or 1))
+        defeated = min(total, int(quest_data.get("Killed", 0) or 0) + 1)
+        quest_data["Killed"] = defeated
+        if defeated >= total:
+            message = _advance_or_complete_quest(quest_name, quest_data)
+            if message:
+                messages.append(message)
+    return "\n".join(messages) + ("\n" if messages else "")
+
+
+def record_collection(player, item) -> str:
+    """Record an item obtained against active side-quest collection objectives."""
+    messages: list[str] = []
+    for quest_name, quest_data in ensure_quest_categories(player)["Side"].items():
+        if not isinstance(quest_data, dict) or quest_data.get("Type") != "Collect":
+            continue
+        if not _collection_target_matches(quest_data.get("What"), item):
+            continue
+        if quest_data.get("Completed") or quest_data.get("Turned In"):
+            continue
+        total = max(1, int(quest_data.get("Total", 1) or 1))
+        prior_collected = int(quest_data.get("Collected", 0) or 0)
+        collected = min(total, _collection_inventory_count(player, quest_data.get("What")))
+        quest_data["Collected"] = collected
+        if collected >= total and prior_collected < total:
+            message = _advance_or_complete_quest(quest_name, quest_data)
+            if message:
+                messages.append(message)
+    return "\n".join(messages) + ("\n" if messages else "")
+
+
+def sync_collection_progress(player) -> None:
+    """Reconcile active collection quests with items already in inventory.
+
+    This repairs progress from saves created before ordinary enemy loot notified
+    the quest system, and prevents a display count from exceeding its target.
+    """
+    for category in ("Main", "Side"):
+        for quest_data in ensure_quest_categories(player)[category].values():
+            if (
+                not isinstance(quest_data, dict)
+                or quest_data.get("Type") != "Collect"
+                or quest_data.get("Completed")
+                or quest_data.get("Turned In")
+            ):
+                continue
+            total = max(1, int(quest_data.get("Total", 1) or 1))
+            collected = min(total, _collection_inventory_count(player, quest_data.get("What")))
+            quest_data["Collected"] = collected
+            if collected >= total:
+                _advance_or_complete_quest("", quest_data)
+
+
+def _collection_target_matches(quest_what, item) -> bool:
+    """Return whether one inventory item satisfies a collection target."""
+    item_name = getattr(item, "name", None)
+    item_class_name = type(item).__name__
+    if isinstance(quest_what, str):
+        return quest_what in {item_name, item_class_name}
+    if callable(quest_what):
+        return quest_what.__name__ == item_class_name
+    return getattr(quest_what, "name", None) == item_name
+
+
+def _collection_inventory_count(player, quest_what) -> int:
+    """Count matching inventory stacks across regular and special inventory."""
+    count = 0
+    for inventory_name in ("inventory", "special_inventory"):
+        inventory = getattr(player, inventory_name, {}) or {}
+        for stack in inventory.values():
+            for item in stack:
+                if _collection_target_matches(quest_what, item):
+                    count += 1
+    return count
 
 
 def relic_count(player) -> int:

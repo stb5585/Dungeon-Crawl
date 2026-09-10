@@ -658,9 +658,24 @@
       "3": {
         "A Candle for the Descent": {
           "Who": "Seraphine Voss", "Type": "Talk", "What": "Barkeep", "Total": 1,
-          "Start Text": "The old Barkeep keeps practical notes on the first descent. Ask him which route the newest adventurers are surviving, then return to me before you press farther down.",
+          "Stage": "ask_barkeep",
+          "Stages": {
+            "ask_barkeep": {
+              "Type": "Talk", "What": "Barkeep", "Total": 1,
+              "Help Text": "Speak with the Barkeep at the Thirsty Dog about the first descent.",
+              "Next Stage": "find_descent",
+              "Progress Text": "The Barkeep marks the safer descent on your map: the stairs at the north edge of the first floor."
+            },
+            "find_descent": {
+              "Type": "Locate", "What": "First Descent", "Total": 1,
+              "Target Position": [3, 0, 1],
+              "Help Text": "Find the stairs at the north edge of the first dungeon floor.",
+              "Completion Text": "You have confirmed the first descent and can report the route to Seraphine."
+            }
+          },
+          "Start Text": "The old Barkeep keeps practical notes on the first descent. Ask him which route the newest adventurers are surviving, then follow his marked route before you report back to me.",
           "End Text": "Good. A prepared mage lives longer than a brilliant but lost one. Keep your eyes open for the stairs and do not mistake the first floor for the whole dungeon.",
-          "Help Text": "Speak with the Barkeep at the Thirsty Dog, then return to Seraphine.",
+          "Help Text": "Speak with the Barkeep at the Thirsty Dog about the first descent.",
           "Reward": ["ManaPotion"], "Reward Number": 2, "Experience": 120,
           "Completed": false, "Turned In": false
         }
@@ -686,12 +701,12 @@
           "Completed": false, "Turned In": false
         }
       },
-      "30": {
+      "55": {
         "The Unquiet Thesis": {
           "Who": "Seraphine Voss", "Type": "Defeat", "What": "Lich", "Total": 1,
           "Start Text": "A Lich has turned scholarship into an excuse for cruelty. End its research before its notes find their way into the wrong hands.",
           "End Text": "Its work is ash, and its knowledge will remain buried. Take this elixir for the battles that still demand more from you.",
-          "Help Text": "Liches haunt the deeper dungeon levels and command dangerous arcane magic.",
+          "Help Text": "Liches haunt the deepest dungeon floors and command dangerous arcane magic.",
           "Reward": ["Elixir"], "Reward Number": 1, "Experience": 3500,
           "Completed": false, "Turned In": false
         }
@@ -704,19 +719,33 @@
       "10": {
         "An Honest Introduction": {
           "Who": "Mara Vale", "Type": "Talk", "What": "Griswold", "Total": 1,
-          "Start Text": "Griswold knows which shipments arrive damaged before they reach my ledger. Ask him about the missing crates, then bring me the answer; call it an introduction to honest work.",
+          "Stage": "ask_griswold",
+          "Stages": {
+            "ask_griswold": {
+              "Type": "Talk", "What": "Griswold", "Total": 1,
+              "Help Text": "Speak with Griswold at the Blacksmith about Mara's missing crates.",
+              "Next Stage": "close_the_ledger",
+              "Progress Text": "Griswold identifies the culprits: Bandits have been stripping the marked crates before they reach town."
+            },
+            "close_the_ledger": {
+              "Type": "Defeat", "What": "Bandit", "Total": 4,
+              "Help Text": "Defeat four Bandits and return to Mara Vale with the route cleared.",
+              "Completion Text": "The marked-crate bandits have been dealt with. Return to Mara Vale."
+            }
+          },
+          "Start Text": "Griswold knows which shipments arrive damaged before they reach my ledger. Ask him about the missing crates, then act on what you learn; call it an introduction to honest work.",
           "End Text": "You listened, remembered, and did not embellish. Those are rarer skills than a sharp knife.",
-          "Help Text": "Speak with Griswold at the Blacksmith, then return to Mara Vale.",
+          "Help Text": "Speak with Griswold at the Blacksmith about Mara's missing crates.",
           "Reward": ["Gold"], "Reward Number": 900, "Experience": 300,
           "Completed": false, "Turned In": false
         }
       },
       "14": {
         "Loose Ends": {
-          "Who": "Mara Vale", "Type": "Defeat", "What": "Bandit", "Total": 6,
-          "Start Text": "A crew of Bandits has been taking coin from travelers who already paid their dues. Remove six of them and make it clear whose routes they have been abusing.",
-          "End Text": "The roads will be quieter, and my ledger will be cleaner. Both are profitable outcomes.",
-          "Help Text": "Bandits appear throughout the early and middle dungeon routes.",
+          "Who": "Mara Vale", "Type": "Collect", "What": "Key", "Total": 5,
+          "Start Text": "Too many keys from the old routes have fallen into untrained hands. Recover five before an amateur opens something they cannot close.",
+          "End Text": "These keys will be catalogued or melted down. Either result is safer than leaving them in the dark.",
+          "Help Text": "Keys can be found in chests and carried by creatures on the early dungeon floors.",
           "Reward": ["Gold"], "Reward Number": 1800, "Experience": 600,
           "Completed": false, "Turned In": false
         }
