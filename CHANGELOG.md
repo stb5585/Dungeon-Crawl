@@ -2,6 +2,69 @@
 
 ## [Unreleased]
 
+### Foundational Gameplay Baseline
+
+- Completed the foundational gameplay refactor: immutable ability slugs and
+  typed taxonomy, versioned current-save serialization, actor-relative combat
+  intents, one-roll fitted contact, virtual readiness, concealment/targeting,
+  and a unified action interface.
+- Established the post-refactor seed-1337 characterization reports and kept
+  ordinary dungeon encounters singleton after Multi-Enemy Pilot 3 qualified no
+  pair. One- and two-enemy encounter support remains available through the
+  bounded combat APIs and development overrides.
+- Retired unmarked pre-foundation save compatibility rather than guessing at
+  ambiguous state; current versioned saves retain deterministic dungeon state
+  and round-trip coverage.
+
+### Combat Presentation And Input
+
+- Reworked combat actions into a persisted six-slot shortcut bar plus a
+  read-only All Actions catalog. Shortcut assignment now lives in the combined
+  Character Menu Abilities workspace, with learned Skills and Spells presented
+  as draggable icon cards.
+- Made empty shortcuts inert; keyboard menu navigation skips shortcut tiles,
+  while number keys, mouse, and touch continue to activate assigned shortcuts.
+- Combined the current actor and timeline into a single ribbon with player- and
+  enemy-side outlines, and deferred level-up/resource mutations and timeline
+  cleanup until enemy-fade presentation completes.
+- Restored Defend to boss-room action lists while retaining the intentional
+  boss-fight Flee restriction. Increased Charge's delayed hit to 2.5× weapon
+  damage without changing its one-turn setup, MP cost, or contested stun.
+- Corrected enemy escape settlement so an escaped singleton grants no
+  experience, gold, loot, kill, bounty, or quest credit.
+
+### Dungeon, Gathering, And Persistence
+
+- Replaced automatic Deathcap collection with deterministic, persistent
+  gathering nodes on eligible cave paths. Druid/Archdruid identify and harvest
+  Acorn, Vine Seed, Fungus Spore, and Hemlock Root; Assassin identifies and
+  harvests Deathcap Mushroom. Themed enemy drops remain an additional route.
+- Added visible, floor-projected root and fungus overlays, specialist and
+  non-specialist discovery feedback, explicit `O` harvesting, guarded forage
+  loot popups, node persistence, and legacy Deathcap-node migration.
+- Stored ordinary chest Mimic outcomes at deterministic dungeon generation so
+  loading a save cannot reroll a Mimic into a normal chest. Guaranteed Funhouse
+  Mimics remain unchanged.
+- Cleared stale dungeon frames after death/re-entry and completed catalog item
+  icon routing, including Monocane, crossbows, bolts, and venoms.
+
+### Quest, Content, And Playtest Reliability
+
+- Added Magic Shop and Thieves Guild quest access, with eight level-spread
+  quests using collection, defeat, landmark, and staged town-conversation
+  objectives. Early Magic Shop beats provide route guidance without restricting
+  exploration.
+- Made conversation leads advance into follow-up objectives rather than
+  standalone turn-ins; added Bandit defeat progress, lower-level slime access
+  to Fungus Spore drops, and moved the Lich commission to its higher-level
+  placement.
+- Fixed bounty initialization, collection-progress reconciliation and capping,
+  completed-count journal display, repeat-safe turn-in behavior, and generated
+  catalog spreadsheet drift.
+- Added focused regression coverage for gathering rendering/persistence,
+  chest outcomes, quest stages and collection progress, escape settlement,
+  combat presentation, and deterministic post-hit ability assertions.
+
 ### Promotion Stabilization
 
 - Recorded pre-release saves as disposable development artifacts, removed
