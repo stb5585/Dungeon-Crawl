@@ -118,7 +118,7 @@ def record_collection(player, item) -> str:
     """Record an item obtained against active side-quest collection objectives."""
     messages: list[str] = []
     for quest_name, quest_data in ensure_quest_categories(player)["Side"].items():
-        if not isinstance(quest_data, dict) or quest_data.get("Type") != "Collect":
+        if not isinstance(quest_data, dict) or quest_data.get("Type", "Collect") != "Collect":
             continue
         if not _collection_target_matches(quest_data.get("What"), item):
             continue
@@ -126,7 +126,10 @@ def record_collection(player, item) -> str:
             continue
         total = max(1, int(quest_data.get("Total", 1) or 1))
         prior_collected = int(quest_data.get("Collected", 0) or 0)
-        collected = min(total, _collection_inventory_count(player, quest_data.get("What")))
+        collected = min(
+            total,
+            max(prior_collected + 1, _collection_inventory_count(player, quest_data.get("What"))),
+        )
         quest_data["Collected"] = collected
         if collected >= total and prior_collected < total:
             message = _advance_or_complete_quest(quest_name, quest_data)
@@ -145,7 +148,7 @@ def sync_collection_progress(player) -> None:
         for quest_data in ensure_quest_categories(player)[category].values():
             if (
                 not isinstance(quest_data, dict)
-                or quest_data.get("Type") != "Collect"
+                or quest_data.get("Type", "Collect") != "Collect"
                 or quest_data.get("Completed")
                 or quest_data.get("Turned In")
             ):
